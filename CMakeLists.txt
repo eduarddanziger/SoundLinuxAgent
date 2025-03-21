@@ -23,14 +23,13 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
 
 # Include directories
-target_include_directories(SoundLinuxAgent PRIVATE "/usr/include/alsa" "/usr/include/fmt" "/usr/include/spdlog" ${CMAKE_BINARY_DIR})
+target_include_directories(SoundLinuxAgent PRIVATE "/usr/include/alsa" "/usr/include/spdlog" ${CMAKE_BINARY_DIR})
 
 # Link libraries
-target_link_libraries(SoundLinuxAgent PRIVATE asound fmt::fmt spdlog::spdlog)
+target_link_libraries(SoundLinuxAgent PRIVATE asound spdlog::spdlog)
 
 # Set C++ standard
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -69,7 +68,7 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is a test application for audio processing.")
 
 # Specify the dependencies (for DEB packages)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libfmt-dev, libspdlog-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
 
 # Specify the installation paths
 install(TARGETS SoundLinuxAgent DESTINATION bin)
