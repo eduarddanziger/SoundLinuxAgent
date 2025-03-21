@@ -1,0 +1,6 @@
+#pragma once
+
+namespace
+{
+    constexpr const char* VERSION = "@CPACK_PACKAGE_VERSION@";
+}
