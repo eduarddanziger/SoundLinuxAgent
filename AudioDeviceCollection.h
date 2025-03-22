@@ -28,23 +28,28 @@ public:
     AudioDeviceCollection();
     ~AudioDeviceCollection();
 
-    void subscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
-    void unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
+    void Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
+    void Unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
     
-    void updateDeviceList();
-    void startMonitoring();
+    void GetServerInfo();
+    void StartMonitoring();
     void stopMonitoring();
 
 private:
-    pa_glib_mainloop* mainloop;
-    pa_context* context;
-    std::unordered_map<uint32_t, AudioDevice> devices;
-    std::vector<std::weak_ptr<IDeviceSubscriber>> subscribers;
-    
-    void notifySubscribers(const DeviceEvent& event);
-    static void contextStateCallback(pa_context* c, void* userdata);
-    static void subscribeCallback(pa_context* c, pa_subscription_event_type_t t, uint32_t idx, void* userdata);
-    static void serverInfoCallback(pa_context* c, const pa_server_info* i, void* userdata);
-    static void sinkInfoCallback(pa_context* c, const pa_sink_info* i, int eol, void* userdata);
-    static void sourceInfoCallback(pa_context* c, const pa_source_info* i, int eol, void* userdata);
+    std::pair<std::string, std::string> GetBetterDeviceNames(const pa_proplist* proplist,
+        const std::string& defaultId,
+        const std::string& defaultName);
+    void NotifySubscribers(const DeviceEvent& event);
+    static void ContextStateCallback(pa_context* c, void* userdata);
+    static void SubscribeCallback(pa_context* c, pa_subscription_event_type_t t, uint32_t idx, void* userdata);
+    static void ServerInfoCallback(pa_context* c, const pa_server_info* i, void* userdata);
+    static void SinkInfoCallback(pa_context* c, const pa_sink_info* i, int eol, void* userdata);
+    static void SourceInfoCallback(pa_context* c, const pa_source_info* i, int eol, void* userdata);
+
+private:
+    pa_glib_mainloop* mainloop_;
+    pa_context* context_;
+    std::unordered_map<uint32_t, AudioDevice> devices_;
+    std::vector<std::weak_ptr<IDeviceSubscriber>> subscribers_;
+
 };
