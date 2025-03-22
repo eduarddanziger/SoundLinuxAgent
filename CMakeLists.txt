@@ -12,7 +12,7 @@ endif()
 project("SoundLinuxAgent")
 
 # Add source to this project's executable.
-add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp")
+add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp" "AudioDeviceCollection.cpp")
 
 # Enforce out-of-source builds
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
@@ -25,11 +25,22 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBPULSE REQUIRED libpulse)
+pkg_check_modules(LIBPULSE_MAINLOOP_GLIB REQUIRED libpulse-mainloop-glib)
+
 # Include directories
-target_include_directories(SoundLinuxAgent PRIVATE "/usr/include/alsa" "/usr/include/spdlog" ${CMAKE_BINARY_DIR})
+target_include_directories(SoundLinuxAgent PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ${LIBPULSE_INCLUDE_DIRS}
+    ${LIBPULSE_MAINLOOP_GLIB_INCLUDE_DIRS}
+    )
 
 # Link libraries
-target_link_libraries(SoundLinuxAgent PRIVATE asound spdlog::spdlog)
+target_link_libraries(SoundLinuxAgent PRIVATE
+spdlog::spdlog
+${LIBPULSE_LIBRARIES}
+${LIBPULSE_MAINLOOP_GLIB_LIBRARIES})
 
 # Set C++ standard
 if (CMAKE_VERSION VERSION_GREATER 3.12)
