@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build libasound2-dev libfmt-dev libspdlog-dev
+        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libpulse-mainloop-glib-dev
 
     - name: Get version from Git tags
       id: get_version
