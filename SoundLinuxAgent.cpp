@@ -3,9 +3,10 @@
 #include <memory>
 #include <stdexcept>
 #include <filesystem>
-#include "cpversion.h" // Include the generated version header
+
 #include "SpdLogSetup.h" // Include the spdlog setup header
-#include "MixerRaiiPtrs.h" // Include the new header file
+#include "cpversion.h" // generated version header
+
 
 #include "AudioDeviceCollection.h"
 
