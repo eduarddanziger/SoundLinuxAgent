@@ -4,14 +4,14 @@
 #include <pulse/glib-mainloop.h>
 #include <pulse/proplist.h>
 
-#include <spdlog/spdlog.h>
-
+#include "ScopeLogger.h"
 
 
 AudioDeviceCollection::AudioDeviceCollection()
     : mainloop_(nullptr)
     , context_(nullptr)
 {
+    LOG_SCOPE();
     mainloop_ = pa_glib_mainloop_new(nullptr);
     context_ = pa_context_new(pa_glib_mainloop_get_api(mainloop_), "DeviceMonitor");
 
@@ -20,6 +20,7 @@ AudioDeviceCollection::AudioDeviceCollection()
 }
 
 AudioDeviceCollection::~AudioDeviceCollection() {
+    LOG_SCOPE();
     if(context_) {
         pa_context_disconnect(context_);
         pa_context_unref(context_);
@@ -38,6 +39,7 @@ void AudioDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subsc
 }
 
 void AudioDeviceCollection::StartMonitoring() {
+    LOG_SCOPE();
     pa_context_subscribe(context_, static_cast<pa_subscription_mask_t>(PA_SUBSCRIPTION_MASK_SINK | 
                                 PA_SUBSCRIPTION_MASK_SOURCE |
                                 PA_SUBSCRIPTION_MASK_SERVER),
@@ -50,7 +52,8 @@ void AudioDeviceCollection::GetServerInfo() {
     pa_operation_unref(op);
 }
 
-void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
+void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata)
+{
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
     if(pa_context_get_state(c) == PA_CONTEXT_READY) {
         self->GetServerInfo();
@@ -58,7 +61,9 @@ void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) 
 }
 
 void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_event_type_t t,
-    uint32_t idx, void* userdata) {
+    uint32_t idx, void* userdata)
+{
+    LOG_SCOPE();
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
     const auto facility = t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK;
     const auto type = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
@@ -99,13 +104,11 @@ void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
             pa_operation_unref(op);
         }
     }
-    else if (facility == PA_SUBSCRIPTION_EVENT_CHANGE)
-    {
-        int a = 1;
-    }
 }
 void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_info* info, void* userdata)
 {
+    LOG_SCOPE();
+
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
     if (!info) {
         std::cerr << "Failed to get server info." << std::endl;
@@ -134,6 +137,7 @@ std::pair<std::string, std::string> AudioDeviceCollection::GetBetterDeviceNames(
     std::string deviceName = defaultName;
 
     if (proplist) {
+/*
         // Print all properties for debugging
         std::cout << "  Properties:" << std::endl;
 
@@ -144,20 +148,17 @@ std::pair<std::string, std::string> AudioDeviceCollection::GetBetterDeviceNames(
         while ((key = pa_proplist_iterate(proplist, &state))) {
             const char* value = pa_proplist_gets(proplist, key);
             if (value) {
-                spdlog::info("Key: {}, Value: {}", key, value);
-//                std::cout << "    " << key << ": " << value << std::endl;
+                std::cout << "    " << key << ": " << value << std::endl;
             }
             else {
-                spdlog::info("Key: {}, Value: [binary data]", key);
-//                std::cout << "    " << key << ": [binary data]" << std::endl;
+                std::cout << "    " << key << ": [binary data]" << std::endl;
             }
         }
+*/
 
         // Look for the actual hardware device information
         const char* device_id = pa_proplist_gets(proplist, "device.id");
-        const char* device_product_name = pa_proplist_gets(proplist, "device.product.name");
-        const char* device_vendor_name = pa_proplist_gets(proplist, "device.vendor.name");
-        const char* alsa_card_name = pa_proplist_gets(proplist, "alsa.card_name");
+        const char* device_nick = pa_proplist_gets(proplist, "device.nick");
         const char* device_api = pa_proplist_gets(proplist, "device.api");
 
         // Use better identification if available
@@ -166,14 +167,8 @@ std::pair<std::string, std::string> AudioDeviceCollection::GetBetterDeviceNames(
         }
 
         // Try to construct a more meaningful name
-        if (device_product_name && device_vendor_name) {
-            deviceName = std::string(device_vendor_name) + " " + device_product_name;
-        }
-        else if (device_product_name) {
-            deviceName = device_product_name;
-        }
-        else if (alsa_card_name) {
-            deviceName = alsa_card_name;
+        if (device_nick) {
+            deviceName = device_nick;
         }
 
         // Append API information if available
@@ -186,8 +181,8 @@ std::pair<std::string, std::string> AudioDeviceCollection::GetBetterDeviceNames(
 }
 
 
-// Now modify your SinkInfoCallback to use this helper function
 void AudioDeviceCollection::SinkInfoCallback(pa_context* c, const pa_sink_info* i, int eol, void* userdata) {
+    LOG_SCOPE();
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
     if (eol) {
@@ -223,6 +218,7 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* c, const pa_sink_info* 
 
 // And similarly modify your SourceInfoCallback
 void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_info* i, int eol, void* userdata) {
+    LOG_SCOPE();
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
     if (eol) {
@@ -257,6 +253,7 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_in
 }
 
 void AudioDeviceCollection::NotifySubscribers(const DeviceEvent& event) {
+    LOG_SCOPE();
     // Iterate through the list of subscribers
     for (auto it = subscribers_.begin(); it != subscribers_.end();) {
         // Lock the weak_ptr to get a shared_ptr
