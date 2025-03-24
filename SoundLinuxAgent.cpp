@@ -16,13 +16,20 @@ class ConsoleSubscriber final : public IDeviceSubscriber {
     public:
         void OnDeviceEvent(const DeviceEvent& event) override {
             // ReSharper disable once CppUseAuto
-            const char* typeStr = "";
+            const char* eventTypeAsString = "";
             switch(event.type) {
-                case DeviceEventType::Added: typeStr = "Added"; break;
-                case DeviceEventType::Removed: typeStr = "Removed"; break;
-                case DeviceEventType::VolumeChanged: typeStr = "VolumeChanged"; break;
+                case DeviceEventType::Added: eventTypeAsString = "Added"; break;
+                case DeviceEventType::Removed: eventTypeAsString = "Removed"; break;
+                case DeviceEventType::VolumeChanged: eventTypeAsString = "VolumeChanged"; break;
             }
-            std::cout << "Device event: " << typeStr << " - " << event.device.name << "\n";
+            const char* deviceTypeAsString = "";
+            switch(event.device.type) {
+                case DeviceType::Capture: deviceTypeAsString = "Capture"; break;
+                case DeviceType::Render: deviceTypeAsString = "Render"; break;
+            }
+            std::cout << "Got Event (" << eventTypeAsString << "): " << "\nid: " <<
+                event.device.pnpId << "\ntype: " << deviceTypeAsString <<
+                "\nname: " << event.device.name << "\nqvolume: " << event.device.volume << ".\n";
         }
 };
 
