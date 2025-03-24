@@ -9,9 +9,9 @@ struct AudioDevice {
     std::string name;
     DeviceType type;
     uint32_t index;
-    pa_cvolume volume;
+    uint32_t volume;
     
-    AudioDevice(const std::string& id, const std::string& n, DeviceType t, uint32_t idx)
-        : pnpId(id), name(n), type(t), index(idx) {}
-    AudioDevice() : pnpId(""), name(""), type(DeviceType::Render), index(0) {}
+    AudioDevice(std::string id, std::string n, DeviceType t, uint32_t idx, uint32_t vol)
+        : pnpId(std::move(id)), name(std::move(n)), type(t), index(idx), volume(vol) {}
+    AudioDevice() : pnpId(""), name(""), type(DeviceType::Render), index(0), volume(0) {}
 };

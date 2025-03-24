@@ -135,56 +135,25 @@ void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
     pa_operation_unref(op);
 }
 
-std::pair<std::string, std::string> AudioDeviceCollection::GetBetterDeviceNames(const pa_proplist* proplist, const std::string& defaultId, const std::string& defaultName) {
-    std::string deviceId = defaultId;
-    std::string deviceName = defaultName;
+void AudioDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index)
+{
+    std::cout << "----- Info ------" << std::endl;
+    std::cout << "Id (orig .name): " << id << std::endl;
+    std::cout << "Name (orig .description): " << name << std::endl;
+    std::cout << "Volume: " << volume << std::endl;
+    std::cout << "Index: " << index << std::endl;
 
-    if (proplist) {
-/*
-        // Print all properties for debugging
-        std::cout << "  Properties:" << std::endl;
+    // Add or update the sink in the device collection
+    AudioDevice device(id, name, type, index, volume);
 
-        // Instead of using pa_proplist_foreach, use iterative property access
-        const char* key = nullptr;
-        void* state = nullptr;
+    devices_[index] = device;
 
-        while ((key = pa_proplist_iterate(proplist, &state))) {
-            const char* value = pa_proplist_gets(proplist, key);
-            if (value) {
-                std::cout << "    " << key << ": " << value << std::endl;
-            }
-            else {
-                std::cout << "    " << key << ": [binary data]" << std::endl;
-            }
-        }
-*/
-
-        // Look for the actual hardware device information
-        const char* device_id = pa_proplist_gets(proplist, "device.id");
-        const char* device_nick = pa_proplist_gets(proplist, "device.nick");
-        const char* device_api = pa_proplist_gets(proplist, "device.api");
-
-        // Use better identification if available
-        if (device_id) {
-            deviceId = device_id;
-        }
-
-        // Try to construct a more meaningful name
-        if (device_nick) {
-            deviceName = device_nick;
-        }
-
-        // Append API information if available
-        if (device_api) {
-            deviceName += " (" + std::string(device_api) + ")";
-        }
-    }
-
-    return { deviceId, deviceName };
+    // Notify subscribers about the new/updated device
+    const DeviceEvent event{ device, DeviceEventType::Added} ;
+    NotifySubscribers(event);
 }
 
-
-void AudioDeviceCollection::SinkInfoCallback(pa_context* c, const pa_sink_info* i, int eol, void* userdata) {
+void AudioDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
     LOG_SCOPE();
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
@@ -193,32 +162,20 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* c, const pa_sink_info* 
         return;
     }
 
-    if (!i) {
+    if (!info) {
         std::cerr << "Failed to get sink info." << std::endl;
         return;
     }
 
-    const auto [deviceId, deviceName] = std::make_pair(std::string("SINC:") + i->name, std::string(i->description));
-    // auto [deviceId, deviceName] = self->GetBetterDeviceNames(i->proplist, i->name, i->description);
+    const auto [deviceId, deviceName] = std::make_pair(std::string("SINC:") + info->name, std::string(info->description));
+    const uint32_t volume = pa_cvolume_avg(&info->volume);
+    constexpr auto type = DeviceType::Render;  // Sinks are output devices
+    const uint32_t index = info->index;  // Sinks are output devices
 
-    std::cout << "----- Info ------" << std::endl;
-    std::cout << "Id (orig .name): " << deviceId << std::endl;
-    std::cout << "Name (orig .description): " << deviceName << std::endl;
-    std::cout << "Volume: " << pa_cvolume_avg(&i->volume) << std::endl;
-
-    // Add or update the sink in the device collection
-    DeviceType type = DeviceType::Render;  // Sinks are output devices
-    AudioDevice device(deviceId, deviceName, type, i->index);
-    device.volume = i->volume;
-
-    self->devices_[i->index] = device;
-
-    // Notify subscribers about the new/updated device
-    DeviceEvent event{ device, DeviceEventType::Added} ;
-    self->NotifySubscribers(event);
+    self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
 }
 
-void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_info* i, int eol, void* userdata) {
+void AudioDeviceCollection::SourceInfoCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
     LOG_SCOPE();
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
@@ -227,30 +184,17 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_in
         return;
     }
 
-    if (!i) {
+    if (!info) {
         std::cerr << "Failed to get source info." << std::endl;
         return;
     }
 
-    std::cout << "-- SOURCE Info --" << std::endl;
-    std::cout << "Id (orig .name): " << i->name << std::endl;
-    std::cout << "Name (orig .description): " << i->description << std::endl;
-    std::cout << "Driver: " << (i->driver ? i->driver : "Unknown") << std::endl;
-    std::cout << "Volume: " << pa_cvolume_avg(&i->volume) << std::endl;
+    const auto [deviceId, deviceName] = std::make_pair(std::string("SOURCE:") + info->name, std::string(info->description));
+    const uint32_t volume = pa_cvolume_avg(&info->volume);
+    constexpr auto type = DeviceType::Capture;  // Sinks are output devices
+    const uint32_t index = info->index;  // Sinks are output devices
 
-    // Get better device names using our helper function
-    auto [deviceId, deviceName] = self->GetBetterDeviceNames(i->proplist, i->name, i->description);
-
-    // Add or update the source in the device collection
-    DeviceType type = DeviceType::Capture;  // Sources are input devices
-    AudioDevice device(deviceId, deviceName, type, i->index);
-    device.volume = i->volume;
-
-    self->devices_[i->index] = device;
-
-    // Notify subscribers about the new/updated device
-    DeviceEvent event{ device, DeviceEventType::Added };
-    self->NotifySubscribers(event);
+    self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
 }
 
 void AudioDeviceCollection::NotifySubscribers(const DeviceEvent& event) {
@@ -260,7 +204,7 @@ void AudioDeviceCollection::NotifySubscribers(const DeviceEvent& event) {
         // Lock the weak_ptr to get a shared_ptr
         if (auto subscriber = it->lock()) {
             // Notify the subscriber about the event
-            subscriber->onDeviceEvent(event);
+            subscriber->OnDeviceEvent(event);
             ++it;  // Move to the next subscriber
         } else {
             // If the weak_ptr is expired (subscriber no longer exists), remove it from the list

@@ -14,7 +14,7 @@
 
 class ConsoleSubscriber final : public IDeviceSubscriber {
     public:
-        void onDeviceEvent(const DeviceEvent& event) override {
+        void OnDeviceEvent(const DeviceEvent& event) override {
             // ReSharper disable once CppUseAuto
             const char* typeStr = "";
             switch(event.type) {
