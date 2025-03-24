@@ -40,10 +40,15 @@ void AudioDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subsc
 
 void AudioDeviceCollection::StartMonitoring() {
     LOG_SCOPE();
-    pa_context_subscribe(context_, static_cast<pa_subscription_mask_t>(PA_SUBSCRIPTION_MASK_SINK | 
-                                PA_SUBSCRIPTION_MASK_SOURCE |
-                                PA_SUBSCRIPTION_MASK_SERVER),
-                        nullptr, nullptr);
+    pa_context_subscribe(context_
+    , static_cast<pa_subscription_mask_t>(
+        PA_SUBSCRIPTION_MASK_SINK | 
+        PA_SUBSCRIPTION_MASK_SOURCE | 
+        PA_SUBSCRIPTION_MASK_SERVER |
+        PA_SUBSCRIPTION_MASK_SINK_INPUT |    // Add this for volume changes
+        PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT   // Add this for source volume changes
+    )
+    , nullptr, nullptr);
     pa_context_set_subscribe_callback(context_, SubscribeCallback, this);
 }
 
@@ -137,11 +142,13 @@ void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
 
 void AudioDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index)
 {
+    /*
     std::cout << "----- Info ------" << std::endl;
     std::cout << "Id (orig .name): " << id << std::endl;
     std::cout << "Name (orig .description): " << name << std::endl;
     std::cout << "Volume: " << volume << std::endl;
     std::cout << "Index: " << index << std::endl;
+    */
 
     // Add or update the sink in the device collection
     AudioDevice device(id, name, type, index, volume);
