@@ -34,10 +34,8 @@ public:
     void StartMonitoring();
 
     GMainLoop* GetMainloop() const {
-         auto* api = pa_glib_mainloop_get_api(mainloop_);
-         return reinterpret_cast<GMainLoop*>(api);
-        }
-
+        return gMainLoop_;
+    }
 
 private:
     void AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index);
@@ -51,6 +49,7 @@ private:
 private:
     pa_glib_mainloop* mainloop_;
     pa_context* context_;
+    GMainLoop* gMainLoop_;
     std::unordered_map<uint32_t, AudioDevice> devices_;
     std::vector<std::weak_ptr<IDeviceSubscriber>> subscribers_;
 

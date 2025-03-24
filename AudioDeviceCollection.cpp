@@ -12,7 +12,8 @@ AudioDeviceCollection::AudioDeviceCollection()
     , context_(nullptr)
 {
     LOG_SCOPE();
-    mainloop_ = pa_glib_mainloop_new(nullptr);
+    gMainLoop_ = g_main_loop_new(nullptr, FALSE);
+    mainloop_ = pa_glib_mainloop_new(g_main_loop_get_context(gMainLoop_));
     context_ = pa_context_new(pa_glib_mainloop_get_api(mainloop_), "DeviceMonitor");
     //pa_context_set_flags(context_, PA_CONTEXT_NOFLAGS);
 
@@ -27,6 +28,7 @@ AudioDeviceCollection::~AudioDeviceCollection() {
         pa_context_unref(context_);
     }
     if(mainloop_) pa_glib_mainloop_free(mainloop_);
+    if(gMainLoop_) g_main_loop_unref(gMainLoop_);
 }
 
 void AudioDeviceCollection::Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber) {
