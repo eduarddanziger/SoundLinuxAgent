@@ -6,11 +6,13 @@
 #include <glib.h>
 #include <thread>
 #include <atomic>
+#include <sys/select.h>
+#include <unistd.h>
 
 #include "SpdLogSetup.h" // Include the spdlog setup header
 #include "cpversion.h" // generated version header
-
 #include "AudioDeviceCollection.h"
+#include "KeyInputThread.h" // Add this include for the keyInputThread function
 
 class ConsoleSubscriber final : public IDeviceSubscriber {
     public:
@@ -32,20 +34,6 @@ class ConsoleSubscriber final : public IDeviceSubscriber {
                 "\nname: " << event.device.name << "\nqvolume: " << event.device.volume << ".\n";
         }
 };
-
-// Function to watch for key input in a separate thread
-void keyInputThread(GMainLoop* loop, std::atomic<bool>& running) {
-    std::cout << "Press 'q' and Enter to quit\n";
-    while (running) {
-        char input;
-        std::cin >> input;
-        if (input == 'q' || input == 'Q') {
-            std::cout << "Quitting...\n";
-            g_main_loop_quit(loop);
-            break;
-        }
-    }
-}
 
 int main(int argc, char *argv[])
 {
@@ -79,7 +67,16 @@ int main(int argc, char *argv[])
         std::atomic<bool> running{true};
 
         // Start the key input thread
-        std::thread inputThread(keyInputThread, loop, std::ref(running));
+        std::thread inputThread([&]() {
+            keyInputThread(
+                [loop]() {  // Quit callback (executes when 'q' is pressed)
+                    std::cout << "Quitting...\n";
+                    g_main_loop_quit(loop);
+                },
+                running,
+                15
+            );
+        });
 
         // Run the main loop
         g_main_loop_run(loop);
