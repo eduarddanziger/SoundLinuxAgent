@@ -48,6 +48,7 @@ void AudioDeviceCollection::StartMonitoring() {
 }
 
 void AudioDeviceCollection::GetServerInfo() {
+    spdlog::info("SERVER: Requesting info...");
     pa_operation* op = pa_context_get_server_info(context_, ServerInfoCallback, this);
     pa_operation_unref(op);
 }
@@ -70,36 +71,36 @@ void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
 
     if (facility == PA_SUBSCRIPTION_EVENT_SINK) {
         if (type == PA_SUBSCRIPTION_EVENT_REMOVE) {
-            // Handle device removal
+            spdlog::info("SINK index {}: Removing...", idx);
             if (self->devices_.count(idx) > 0) {
                 AudioDevice device = self->devices_[idx];
                 self->devices_.erase(idx);
 
                 // Notify about removal
-                DeviceEvent event{ device, DeviceEventType::Removed, device.volume };
+                DeviceEvent event{ device, DeviceEventType::Removed };
                 self->NotifySubscribers(event);
             }
         }
         else {
-            // Get updated sink info
+            spdlog::info("SINK index {}: Adding or updating...", idx);
             pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
             pa_operation_unref(op);
         }
     }
     else if (facility == PA_SUBSCRIPTION_EVENT_SOURCE) {
         if (type == PA_SUBSCRIPTION_EVENT_REMOVE) {
-            // Handle source removal
+            spdlog::info("SOURCE index {}: Removing...", idx);
             if (self->devices_.count(idx) > 0) {
                 AudioDevice device = self->devices_[idx];
                 self->devices_.erase(idx);
 
                 // Notify about removal
-                DeviceEvent event{ device, DeviceEventType::Removed, device.volume };
+                DeviceEvent event{ device, DeviceEventType::Removed };
                 self->NotifySubscribers(event);
             }
         }
         else {
-            // Get updated source info
+            spdlog::info("SOURCE index {}: Adding or updating...", idx);
             pa_operation* op = pa_context_get_source_info_by_index(c, idx, SourceInfoCallback, self);
             pa_operation_unref(op);
         }
@@ -115,7 +116,7 @@ void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
         return;
     }
 
-    std::cout << "Server Info:" << std::endl;
+    std::cout << "SERVER Info:" << std::endl;
     std::cout << "  Default Sink: " << info->default_sink_name << std::endl;
     std::cout << "  Default Source: " << info->default_source_name << std::endl;
 
@@ -125,9 +126,11 @@ void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
     std::string defaultSource = info->default_source_name ? info->default_source_name : "";
     
     // Then request info for all sinks and sources
+    spdlog::info("SINK: Requesting info...");
     pa_operation* op = pa_context_get_sink_info_list(c, SinkInfoCallback, self);
     pa_operation_unref(op);
 
+    spdlog::info("SOURCE: Requesting info...");
     op = pa_context_get_source_info_list(c, SourceInfoCallback, self);
     pa_operation_unref(op);
 }
@@ -195,14 +198,13 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* c, const pa_sink_info* 
         return;
     }
 
-    std::cout << "Sink Info:" << std::endl;
-    std::cout << "  Name: " << i->name << std::endl;
-    std::cout << "  Description: " << i->description << std::endl;
-    std::cout << "  Driver: " << (i->driver ? i->driver : "Unknown") << std::endl;
-    std::cout << "  Volume: " << pa_cvolume_avg(&i->volume) << std::endl;
+    const auto [deviceId, deviceName] = std::make_pair(std::string("SINC:") + i->name, std::string(i->description));
+    // auto [deviceId, deviceName] = self->GetBetterDeviceNames(i->proplist, i->name, i->description);
 
-    // Get better device names using our helper function
-    auto [deviceId, deviceName] = self->GetBetterDeviceNames(i->proplist, i->name, i->description);
+    std::cout << "----- Info ------" << std::endl;
+    std::cout << "Id (orig .name): " << deviceId << std::endl;
+    std::cout << "Name (orig .description): " << deviceName << std::endl;
+    std::cout << "Volume: " << pa_cvolume_avg(&i->volume) << std::endl;
 
     // Add or update the sink in the device collection
     DeviceType type = DeviceType::Render;  // Sinks are output devices
@@ -212,11 +214,10 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* c, const pa_sink_info* 
     self->devices_[i->index] = device;
 
     // Notify subscribers about the new/updated device
-    DeviceEvent event{ device, DeviceEventType::Added, i->volume };
+    DeviceEvent event{ device, DeviceEventType::Added} ;
     self->NotifySubscribers(event);
 }
 
-// And similarly modify your SourceInfoCallback
 void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_info* i, int eol, void* userdata) {
     LOG_SCOPE();
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
@@ -231,11 +232,11 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_in
         return;
     }
 
-    std::cout << "Source Info:" << std::endl;
-    std::cout << "  Name: " << i->name << std::endl;
-    std::cout << "  Description: " << i->description << std::endl;
-    std::cout << "  Driver: " << (i->driver ? i->driver : "Unknown") << std::endl;
-    std::cout << "  Volume: " << pa_cvolume_avg(&i->volume) << std::endl;
+    std::cout << "-- SOURCE Info --" << std::endl;
+    std::cout << "Id (orig .name): " << i->name << std::endl;
+    std::cout << "Name (orig .description): " << i->description << std::endl;
+    std::cout << "Driver: " << (i->driver ? i->driver : "Unknown") << std::endl;
+    std::cout << "Volume: " << pa_cvolume_avg(&i->volume) << std::endl;
 
     // Get better device names using our helper function
     auto [deviceId, deviceName] = self->GetBetterDeviceNames(i->proplist, i->name, i->description);
@@ -248,7 +249,7 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* c, const pa_source_in
     self->devices_[i->index] = device;
 
     // Notify subscribers about the new/updated device
-    DeviceEvent event{ device, DeviceEventType::Added, i->volume };
+    DeviceEvent event{ device, DeviceEventType::Added };
     self->NotifySubscribers(event);
 }
 

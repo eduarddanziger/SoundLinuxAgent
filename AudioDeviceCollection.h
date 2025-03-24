@@ -14,7 +14,6 @@ enum class DeviceEventType { Added, Removed, VolumeChanged };
 struct DeviceEvent {
     AudioDevice device;
     DeviceEventType type;
-    pa_cvolume newVolume;
 };
 
 class IDeviceSubscriber {
