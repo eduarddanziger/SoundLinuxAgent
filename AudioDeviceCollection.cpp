@@ -14,6 +14,7 @@ AudioDeviceCollection::AudioDeviceCollection()
     LOG_SCOPE();
     mainloop_ = pa_glib_mainloop_new(nullptr);
     context_ = pa_context_new(pa_glib_mainloop_get_api(mainloop_), "DeviceMonitor");
+    //pa_context_set_flags(context_, PA_CONTEXT_NOFLAGS);
 
     pa_context_set_state_callback(context_, ContextStateCallback, this);
     pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);

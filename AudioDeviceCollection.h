@@ -33,6 +33,12 @@ public:
     void GetServerInfo();
     void StartMonitoring();
 
+    GMainLoop* GetMainloop() const {
+         auto* api = pa_glib_mainloop_get_api(mainloop_);
+         return reinterpret_cast<GMainLoop*>(api);
+        }
+
+
 private:
     void AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index);
     void NotifySubscribers(const DeviceEvent& event);

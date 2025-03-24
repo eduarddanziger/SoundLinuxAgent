@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
         collection.StartMonitoring();
 
         // Create a GLib main loop
-        GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
+        // GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
+        auto* loop = collection.GetMainloop();
 
         // Set up a flag for the input thread
         std::atomic<bool> running{true};
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
         if (inputThread.joinable()) {
             inputThread.join();
         }
-        g_main_loop_unref(loop);
+        //g_main_loop_unref(loo);
 
         spdlog::info("Main loop exited. Shutting down...");
     }
