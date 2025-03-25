@@ -15,7 +15,6 @@ AudioDeviceCollection::AudioDeviceCollection()
     gMainLoop_ = g_main_loop_new(nullptr, FALSE);
     mainloop_ = pa_glib_mainloop_new(g_main_loop_get_context(gMainLoop_));
     context_ = pa_context_new(pa_glib_mainloop_get_api(mainloop_), "DeviceMonitor");
-    //pa_context_set_flags(context_, PA_CONTEXT_NOFLAGS);
 
     pa_context_set_state_callback(context_, ContextStateCallback, this);
     pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
@@ -45,7 +44,7 @@ void AudioDeviceCollection::TestSubscription() {
     spdlog::info("Testing PulseAudio subscription status:");
     
     if (!context_) {
-        spdlog::error("Context is NULL!");
+        spdlog::info("Context is NULL here.");
         return;
     }
     
@@ -54,20 +53,30 @@ void AudioDeviceCollection::TestSubscription() {
     
     if (state == PA_CONTEXT_READY) {
         spdlog::info("Context is READY - subscriptions should be working");
-        
-        // Force a test event by changing device properties
-        spdlog::info("Triggering a test event...");
+
         // Get the first sink and change something
         pa_operation* op = pa_context_get_sink_info_list(context_, 
             [](pa_context* c, const pa_sink_info* info, int eol, void* userdata) {
-                if (eol > 0 || !info) return;
-                // Just log the first sink we find
-                spdlog::info("Found sink '{}' with index {} for testing", 
-                           info->name, info->index);
+                if (eol > 0) {
+                    spdlog::info("End of sink list reached");
+                    return;
+                }
+                
+                if (!info) {
+                    spdlog::error("No sink info available");
+                    return;
+                }
+                spdlog::info("Found sink '{}' with index {} for testing", info->name, info->index);
+
+                bool currently_muted = (info->mute != 0);
+                spdlog::info("Current mute status: {}, switching to {}.", currently_muted, !currently_muted);
+                pa_operation* mute_op = pa_context_set_sink_mute_by_index(c, info->index, 
+                                                                      !currently_muted, nullptr, nullptr);
+                pa_operation_unref(mute_op);
             }, this);
         pa_operation_unref(op);
     } else {
-        spdlog::error("Context is NOT ready (state={}), subscriptions won't work!", state);
+        spdlog::info("Context is not ready (state={}), subscriptions won't work yet", state);
     }
 }
 
@@ -200,7 +209,7 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
     if (eol) {
-        // End of list, no more sinks to process
+        spdlog::info("...End of sink list.");
         return;
     }
 
@@ -209,10 +218,12 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
         return;
     }
 
+    spdlog::info("Found sink '{}' with index {}.", info->name, info->index);
+
     const auto [deviceId, deviceName] = std::make_pair(std::string("SINC:") + info->name, std::string(info->description));
     const uint32_t volume = pa_cvolume_avg(&info->volume);
-    constexpr auto type = DeviceType::Render;  // Sinks are output devices
-    const uint32_t index = info->index;  // Sinks are output devices
+    constexpr auto type = DeviceType::Render;
+    const uint32_t index = info->index; 
 
     self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
 }
@@ -222,7 +233,7 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
     if (eol) {
-        // End of list, no more sources to process
+        spdlog::info("...End of source list");
         return;
     }
 
@@ -231,10 +242,12 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
         return;
     }
 
+    spdlog::info("Found source '{}' with index {}.", info->name, info->index);
+
     const auto [deviceId, deviceName] = std::make_pair(std::string("SOURCE:") + info->name, std::string(info->description));
     const uint32_t volume = pa_cvolume_avg(&info->volume);
-    constexpr auto type = DeviceType::Capture;  // Sinks are output devices
-    const uint32_t index = info->index;  // Sinks are output devices
+    constexpr auto type = DeviceType::Capture;
+    const uint32_t index = info->index;
 
     self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
 }

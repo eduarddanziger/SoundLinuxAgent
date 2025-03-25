@@ -86,7 +86,13 @@ int main(int argc, char *argv[])
         });
 
         // Run the main loop
-        g_main_loop_run(loop);
+//      g_main_loop_run(loop);
+        GMainContext* context = g_main_loop_get_context(loop);
+        while (running)
+        {
+            g_main_context_iteration(context, FALSE);
+            usleep(10000); // Sleep 10ms between iterations
+        }
 
         // Clean up
         running = false;
