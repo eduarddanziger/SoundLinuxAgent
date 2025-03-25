@@ -41,6 +41,36 @@ void AudioDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subsc
                   [&](const auto & wp) { return wp.lock() == subscriber; });
 }
 
+void AudioDeviceCollection::TestSubscription() {
+    spdlog::info("Testing PulseAudio subscription status:");
+    
+    if (!context_) {
+        spdlog::error("Context is NULL!");
+        return;
+    }
+    
+    pa_context_state_t state = pa_context_get_state(context_);
+    spdlog::info("Context state: {}", state);
+    
+    if (state == PA_CONTEXT_READY) {
+        spdlog::info("Context is READY - subscriptions should be working");
+        
+        // Force a test event by changing device properties
+        spdlog::info("Triggering a test event...");
+        // Get the first sink and change something
+        pa_operation* op = pa_context_get_sink_info_list(context_, 
+            [](pa_context* c, const pa_sink_info* info, int eol, void* userdata) {
+                if (eol > 0 || !info) return;
+                // Just log the first sink we find
+                spdlog::info("Found sink '{}' with index {} for testing", 
+                           info->name, info->index);
+            }, this);
+        pa_operation_unref(op);
+    } else {
+        spdlog::error("Context is NOT ready (state={}), subscriptions won't work!", state);
+    }
+}
+
 void AudioDeviceCollection::StartMonitoring() {
     LOG_SCOPE();
     pa_context_subscribe(context_
@@ -53,6 +83,8 @@ void AudioDeviceCollection::StartMonitoring() {
     )
     , nullptr, nullptr);
     pa_context_set_subscribe_callback(context_, SubscribeCallback, this);
+
+    TestSubscription();
 }
 
 void AudioDeviceCollection::GetServerInfo() {

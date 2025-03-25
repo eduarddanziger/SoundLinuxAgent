@@ -37,6 +37,8 @@ public:
         return gMainLoop_;
     }
 
+    void TestSubscription();
+
 private:
     void AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index);
     void NotifySubscribers(const DeviceEvent& event);

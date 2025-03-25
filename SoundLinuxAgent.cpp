@@ -60,6 +60,9 @@ int main(int argc, char *argv[])
         collection.Subscribe(subscriber);
         collection.StartMonitoring();
 
+        // Test subscription again here, just before running the loop
+        collection.TestSubscription();
+
         // Create a GLib main loop
         // GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
         auto* loop = collection.GetMainloop();
@@ -73,6 +76,9 @@ int main(int argc, char *argv[])
                 [loop]() {  // Quit callback (executes when 'q' is pressed)
                     std::cout << "Quitting...\n";
                     g_main_loop_quit(loop);
+                },
+                [&collection]() {  // Quit callback (executes when 'q' is pressed)
+                    collection.TestSubscription();
                 },
                 running,
                 15

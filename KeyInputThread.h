@@ -6,7 +6,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 
-inline void keyInputThread(std::function<void()> onQuitCallback, std::atomic<bool>& running, uint16_t timeoutBetweenReminders) {
+inline void keyInputThread(std::function<void()> onQuitCallback, std::function<void()> onIterationCallback, std::atomic<bool>& running, uint16_t timeoutBetweenReminders) {
     std::cout << "Press 'q' and Enter to quit\n";
     while (running) {
         fd_set fds;
@@ -23,6 +23,7 @@ inline void keyInputThread(std::function<void()> onQuitCallback, std::atomic<boo
             // Handle error, e.g., break or log an error message
             break;
         } else if (ret == 0) {
+            onIterationCallback(); 
             // Timeout occurred: print the reminder
             std::cout << "Press 'q' and Enter to quit\n";
         } else {
