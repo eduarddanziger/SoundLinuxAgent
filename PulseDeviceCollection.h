@@ -3,16 +3,18 @@
 #include <memory>
 #include <functional>
 #include <unordered_map>
+#include <glib.h>
 
-#include "AudioDevice.h"
+#include "PulseDevice.h"
 
 #include <pulse/glib-mainloop.h>
+#include <pulse/pulseaudio.h>
 
 
 enum class DeviceEventType { Added, Removed, VolumeChanged };
 
 struct DeviceEvent {
-    AudioDevice device;
+    PulseDevice device;
     DeviceEventType type;
 };
 
@@ -22,10 +24,10 @@ public:
     virtual void OnDeviceEvent(const DeviceEvent& event) = 0;
 };
 
-class AudioDeviceCollection {
+class PulseDeviceCollection {
 public:
-    AudioDeviceCollection();
-    ~AudioDeviceCollection();
+    PulseDeviceCollection();
+    ~PulseDeviceCollection();
 
     void Activate();
     void Deactivate();
@@ -33,7 +35,7 @@ public:
     void Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
     void Unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
     
-    GMainLoop* GetMainloop() const {
+    [[nodiscard]] GMainLoop* GetMainLoop() const {
         return gMainLoop_;
     }
 
@@ -55,6 +57,6 @@ private:
     pa_glib_mainloop* mainloop_;
     pa_context* context_;
     GMainLoop* gMainLoop_;
-    std::unordered_map<uint32_t, AudioDevice> devices_;
+    std::unordered_map<uint32_t, PulseDevice> devices_;
     std::vector<std::weak_ptr<IDeviceSubscriber>> subscribers_;
 };

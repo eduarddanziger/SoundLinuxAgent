@@ -1,17 +1,14 @@
 ﻿#include <iostream>
-#include <cstdlib>
 #include <memory>
-#include <stdexcept>
 #include <filesystem>
 #include <glib.h>
 #include <thread>
-#include <atomic>
-#include <sys/select.h>
-#include <unistd.h>
+#include <pulse/pulseaudio.h>
+
 
 #include "SpdLogSetup.h" // Include the spdlog setup header
 #include "cpversion.h" // generated version header
-#include "AudioDeviceCollection.h"
+#include "PulseDeviceCollection.h"
 #include "KeyInputThread.h" // Add this include for the keyInputThread function
 
 class ConsoleSubscriber final : public IDeviceSubscriber {
@@ -54,13 +51,13 @@ int main(int argc, char *argv[])
         
         spdlog::info("Version {}, starting...", VERSION);
 
-        AudioDeviceCollection collection;
+        PulseDeviceCollection collection;
 
         const auto subscriber = std::make_shared<ConsoleSubscriber>();
         collection.Subscribe(subscriber);
 
         collection.Activate();
-        auto* loop = collection.GetMainloop();
+        auto* loop = collection.GetMainLoop();
 
         // Start the key input thread
         std::thread inputThread([&]() {

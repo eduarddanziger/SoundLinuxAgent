@@ -1,4 +1,4 @@
-#include "AudioDeviceCollection.h"
+#include "PulseDeviceCollection.h"
 #include <iostream>
 #include <pulse/subscribe.h>
 #include <pulse/glib-mainloop.h>
@@ -7,7 +7,7 @@
 #include "ScopeLogger.h"
 
 
-AudioDeviceCollection::AudioDeviceCollection()
+PulseDeviceCollection::PulseDeviceCollection()
     : mainloop_(nullptr)
     , context_(nullptr)
 {
@@ -17,7 +17,7 @@ AudioDeviceCollection::AudioDeviceCollection()
     context_ = pa_context_new(pa_glib_mainloop_get_api(mainloop_), "DeviceMonitor");
 }
 
-AudioDeviceCollection::~AudioDeviceCollection() {
+PulseDeviceCollection::~PulseDeviceCollection() {
     LOG_SCOPE();
     if(context_) {
         pa_context_unref(context_);
@@ -26,29 +26,29 @@ AudioDeviceCollection::~AudioDeviceCollection() {
     if(gMainLoop_) g_main_loop_unref(gMainLoop_);
 }
 
-void AudioDeviceCollection::Activate() {
+void PulseDeviceCollection::Activate() {
     LOG_SCOPE();
     pa_context_set_state_callback(context_, ContextStateCallback, this);
     pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
 }
 
-void AudioDeviceCollection::Deactivate() {
+void PulseDeviceCollection::Deactivate() {
     LOG_SCOPE();
     StopMonitoring();
     pa_context_disconnect(context_);
 }
 
-void AudioDeviceCollection::Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber) {
+void PulseDeviceCollection::Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber) {
     subscribers_.emplace_back(subscriber);
 }
 
-void AudioDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber)
+void PulseDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber)
 {
     std::erase_if(subscribers_,
                   [&](const auto & wp) { return wp.lock() == subscriber; });
 }
 
-void AudioDeviceCollection::StartMonitoring() {
+void PulseDeviceCollection::StartMonitoring() {
     LOG_SCOPE();
 
     pa_context_set_subscribe_callback(context_, SubscribeCallback, this);
@@ -72,7 +72,7 @@ void AudioDeviceCollection::StartMonitoring() {
     }
 }
 
-void AudioDeviceCollection::StopMonitoring() {
+void PulseDeviceCollection::StopMonitoring() {
     LOG_SCOPE();
     
     // Disable subscription callback
@@ -93,14 +93,14 @@ void AudioDeviceCollection::StopMonitoring() {
     }
 }
 
-void AudioDeviceCollection::GetServerInfo() {
+void PulseDeviceCollection::GetServerInfo() {
     spdlog::info("SERVER: Requesting info...");
     pa_operation* op = pa_context_get_server_info(context_, ServerInfoCallback, this);
     pa_operation_unref(op);
 }
 
-void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
-    auto* self = static_cast<AudioDeviceCollection*>(userdata);
+void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
     pa_context_state_t state = pa_context_get_state(c);
     
     switch (state) {
@@ -128,11 +128,11 @@ void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) 
     }
 }
 
-void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_event_type_t t,
+void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_event_type_t t,
     uint32_t idx, void* userdata)
 {
     LOG_SCOPE();
-    auto* self = static_cast<AudioDeviceCollection*>(userdata);
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
     const auto facility = t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK;
     const auto type = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
 
@@ -140,7 +140,7 @@ void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         if (type == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SINK index {}: Removing...", idx);
             if (self->devices_.count(idx) > 0) {
-                AudioDevice device = self->devices_[idx];
+                PulseDevice device = self->devices_[idx];
                 self->devices_.erase(idx);
 
                 // Notify about removal
@@ -158,7 +158,7 @@ void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         if (type == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SOURCE index {}: Removing...", idx);
             if (self->devices_.count(idx) > 0) {
-                AudioDevice device = self->devices_[idx];
+                PulseDevice device = self->devices_[idx];
                 self->devices_.erase(idx);
 
                 // Notify about removal
@@ -173,11 +173,11 @@ void AudioDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         }
     }
 }
-void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_info* info, void* userdata)
+void PulseDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_info* info, void* userdata)
 {
     LOG_SCOPE();
 
-    auto* self = static_cast<AudioDeviceCollection*>(userdata);
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
     if (!info) {
         std::cerr << "Failed to get server info." << std::endl;
         return;
@@ -202,7 +202,7 @@ void AudioDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
     pa_operation_unref(op);
 }
 
-void AudioDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index)
+void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index)
 {
     /*
     std::cout << "----- Info ------" << std::endl;
@@ -213,7 +213,7 @@ void AudioDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const st
     */
 
     // Add or update the sink in the device collection
-    AudioDevice device(id, name, type, index, volume);
+    PulseDevice device(id, name, type, index, volume);
 
     devices_[index] = device;
 
@@ -222,9 +222,9 @@ void AudioDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const st
     NotifySubscribers(event);
 }
 
-void AudioDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
+void PulseDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
     LOG_SCOPE();
-    auto* self = static_cast<AudioDeviceCollection*>(userdata);
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
     if (eol) {
         return;
@@ -245,9 +245,9 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
     self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
 }
 
-void AudioDeviceCollection::SourceInfoCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
+void PulseDeviceCollection::SourceInfoCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
     LOG_SCOPE();
-    auto* self = static_cast<AudioDeviceCollection*>(userdata);
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
     if (eol) {
         return;
@@ -268,7 +268,7 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
     self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
 }
 
-void AudioDeviceCollection::NotifySubscribers(const DeviceEvent& event) {
+void PulseDeviceCollection::NotifySubscribers(const DeviceEvent& event) {
     LOG_SCOPE();
     // Iterate through the list of subscribers
     for (auto it = subscribers_.begin(); it != subscribers_.end();) {
