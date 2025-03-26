@@ -8,11 +8,11 @@
 class ScopeLogger {
 public:
     ScopeLogger(const std::string_view& function) : function_(function) {
-        spdlog::info("ENTER: {}", function_);
+        spdlog::debug("ENTER: {}", function_);
     }
     
     ~ScopeLogger() {
-        spdlog::info("EXIT: {}", function_);
+        spdlog::debug("EXIT: {}", function_);
     }
     
 private:

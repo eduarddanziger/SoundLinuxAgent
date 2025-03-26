@@ -6,9 +6,16 @@
 #include <sys/select.h>
 #include <unistd.h>
 
-inline void keyInputThread(std::function<void()> onQuitCallback, std::function<void()> onIterationCallback, std::atomic<bool>& running, uint16_t timeoutBetweenReminders) {
+inline void keyInputThread
+(
+    std::function<bool (char)> onQuitCallback
+  , std::function<void ()> onIterationCallback
+  , uint16_t timeoutBetweenReminders
+)
+{
     std::cout << "Press 'q' and Enter to quit\n";
-    while (running) {
+    for(;;)
+    {
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds);
@@ -24,15 +31,12 @@ inline void keyInputThread(std::function<void()> onQuitCallback, std::function<v
             break;
         } else if (ret == 0) {
             onIterationCallback(); 
-            // Timeout occurred: print the reminder
-            std::cout << "Press 'q' and Enter to quit\n";
         } else {
             // Input is available: read and process it
             char input;
             std::cin >> input;
-            if (input == 'q' || input == 'Q') {
-                onQuitCallback();
-                running = false;
+            if(onQuitCallback(input))
+            {
                 break;
             }
         }

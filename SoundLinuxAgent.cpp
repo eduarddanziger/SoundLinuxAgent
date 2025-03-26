@@ -55,52 +55,41 @@ int main(int argc, char *argv[])
         spdlog::info("Version {}, starting...", VERSION);
 
         AudioDeviceCollection collection;
+
         const auto subscriber = std::make_shared<ConsoleSubscriber>();
-        
         collection.Subscribe(subscriber);
-        collection.StartMonitoring();
 
-        // Test subscription again here, just before running the loop
-        collection.TestSubscription();
-
-        // Create a GLib main loop
-        // GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
+        collection.Activate();
         auto* loop = collection.GetMainloop();
-
-        // Set up a flag for the input thread
-        std::atomic<bool> running{true};
 
         // Start the key input thread
         std::thread inputThread([&]() {
             keyInputThread(
-                [loop]() {  // Quit callback (executes when 'q' is pressed)
-                    std::cout << "Quitting...\n";
-                    g_main_loop_quit(loop);
+                [&collection, loop](char input) {  // Quit callback (executes when 'q' is pressed)
+                    if (input == 'q' || input == 'Q') {
+                        std::cout << "Quitting...\n";
+                        collection.Deactivate();
+                        g_main_loop_quit(loop);
+                        return true;
+                    }
+                    return false;
                 },
-                [&collection]() {  // Quit callback (executes when 'q' is pressed)
-                    collection.TestSubscription();
+                []() {  // Iteration callback (here called every 25 seconds)
+                    std::cout << "Press 'q' and Enter to quit\n";
                 },
-                running,
-                15
+                25
             );
         });
 
         // Run the main loop
-//      g_main_loop_run(loop);
-        GMainContext* context = g_main_loop_get_context(loop);
-        while (running)
-        {
-            g_main_context_iteration(context, FALSE);
-            usleep(10000); // Sleep 10ms between iterations
-        }
+        g_main_loop_run(loop);
 
-        // Clean up
-        running = false;
         if (inputThread.joinable()) {
             inputThread.join();
         }
-        //g_main_loop_unref(loo);
 
+        collection.Unsubscribe(subscriber);
+        
         spdlog::info("Main loop exited. Shutting down...");
     }
     catch (const std::exception & e)

@@ -15,19 +15,27 @@ AudioDeviceCollection::AudioDeviceCollection()
     gMainLoop_ = g_main_loop_new(nullptr, FALSE);
     mainloop_ = pa_glib_mainloop_new(g_main_loop_get_context(gMainLoop_));
     context_ = pa_context_new(pa_glib_mainloop_get_api(mainloop_), "DeviceMonitor");
-
-    pa_context_set_state_callback(context_, ContextStateCallback, this);
-    pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
 }
 
 AudioDeviceCollection::~AudioDeviceCollection() {
     LOG_SCOPE();
     if(context_) {
-        pa_context_disconnect(context_);
         pa_context_unref(context_);
     }
     if(mainloop_) pa_glib_mainloop_free(mainloop_);
     if(gMainLoop_) g_main_loop_unref(gMainLoop_);
+}
+
+void AudioDeviceCollection::Activate() {
+    LOG_SCOPE();
+    pa_context_set_state_callback(context_, ContextStateCallback, this);
+    pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
+}
+
+void AudioDeviceCollection::Deactivate() {
+    LOG_SCOPE();
+    StopMonitoring();
+    pa_context_disconnect(context_);
 }
 
 void AudioDeviceCollection::Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber) {
@@ -40,60 +48,49 @@ void AudioDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subsc
                   [&](const auto & wp) { return wp.lock() == subscriber; });
 }
 
-void AudioDeviceCollection::TestSubscription() {
-    spdlog::info("Testing PulseAudio subscription status:");
-    
-    if (!context_) {
-        spdlog::info("Context is NULL here.");
-        return;
-    }
-    
-    pa_context_state_t state = pa_context_get_state(context_);
-    spdlog::info("Context state: {}", state);
-    
-    if (state == PA_CONTEXT_READY) {
-        spdlog::info("Context is READY - subscriptions should be working");
-
-        // Get the first sink and change something
-        pa_operation* op = pa_context_get_sink_info_list(context_, 
-            [](pa_context* c, const pa_sink_info* info, int eol, void* userdata) {
-                if (eol > 0) {
-                    spdlog::info("End of sink list reached");
-                    return;
-                }
-                
-                if (!info) {
-                    spdlog::error("No sink info available");
-                    return;
-                }
-                spdlog::info("Found sink '{}' with index {} for testing", info->name, info->index);
-
-                bool currently_muted = (info->mute != 0);
-                spdlog::info("Current mute status: {}, switching to {}.", currently_muted, !currently_muted);
-                pa_operation* mute_op = pa_context_set_sink_mute_by_index(c, info->index, 
-                                                                      !currently_muted, nullptr, nullptr);
-                pa_operation_unref(mute_op);
-            }, this);
-        pa_operation_unref(op);
-    } else {
-        spdlog::info("Context is not ready (state={}), subscriptions won't work yet", state);
-    }
-}
-
 void AudioDeviceCollection::StartMonitoring() {
     LOG_SCOPE();
-    pa_context_subscribe(context_
+
+    pa_context_set_subscribe_callback(context_, SubscribeCallback, this);
+
+    pa_operation* op = pa_context_subscribe(context_
     , static_cast<pa_subscription_mask_t>(
         PA_SUBSCRIPTION_MASK_SINK | 
         PA_SUBSCRIPTION_MASK_SOURCE | 
         PA_SUBSCRIPTION_MASK_SERVER |
-        PA_SUBSCRIPTION_MASK_SINK_INPUT |    // Add this for volume changes
-        PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT   // Add this for source volume changes
+        PA_SUBSCRIPTION_MASK_SINK_INPUT |    // including volume changes for sink
+        PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT   // including volume changes for sink
     )
     , nullptr, nullptr);
-    pa_context_set_subscribe_callback(context_, SubscribeCallback, this);
 
-    TestSubscription();
+    if (op) {
+        pa_operation_unref(op);
+        spdlog::info("Started monitoring PulseAudio events");
+    }
+    else {
+        spdlog::error("Failed to startt monitoring PulseAudio events");
+    }
+}
+
+void AudioDeviceCollection::StopMonitoring() {
+    LOG_SCOPE();
+    
+    // Disable subscription callback
+    if (context_ && pa_context_get_state(context_) == PA_CONTEXT_READY) {
+        pa_context_set_subscribe_callback(context_, nullptr, nullptr);
+        pa_operation* op = pa_context_subscribe(context_, 
+                                              PA_SUBSCRIPTION_MASK_NULL,
+                                              nullptr, nullptr);
+        if (op) {
+            pa_operation_unref(op);
+            spdlog::info("Stopped monitoring PulseAudio events");
+        }
+        else {
+            spdlog::warn("Failed to stop monitoring from PulseAudio events");
+        }
+    } else {
+        spdlog::warn("Context not ready, can't stop monitoring");
+    }
 }
 
 void AudioDeviceCollection::GetServerInfo() {
@@ -102,11 +99,32 @@ void AudioDeviceCollection::GetServerInfo() {
     pa_operation_unref(op);
 }
 
-void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata)
-{
+void AudioDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
-    if(pa_context_get_state(c) == PA_CONTEXT_READY) {
-        self->GetServerInfo();
+    pa_context_state_t state = pa_context_get_state(c);
+    
+    switch (state) {
+        case PA_CONTEXT_READY:
+            spdlog::info("PulseAudio context got READY status, state: {}", state);
+            self->GetServerInfo();
+            self->StartMonitoring();
+            break;
+            
+        case PA_CONTEXT_FAILED:
+            spdlog::error(
+                "PulseAudio context FAILED (state {}): {}"
+              , state, pa_strerror(pa_context_errno(c))
+            );
+            break;
+            
+        case PA_CONTEXT_TERMINATED:
+            spdlog::info("PulseAudio context TERMINATED, state: {}", state);
+            break;
+            
+        default:
+            // Still connecting or other states
+            spdlog::info("PulseAudio context gets state: {}", state);
+            break;
     }
 }
 
@@ -209,7 +227,6 @@ void AudioDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
     if (eol) {
-        spdlog::info("...End of sink list.");
         return;
     }
 
@@ -233,7 +250,6 @@ void AudioDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
     auto* self = static_cast<AudioDeviceCollection*>(userdata);
 
     if (eol) {
-        spdlog::info("...End of source list");
         return;
     }
 
