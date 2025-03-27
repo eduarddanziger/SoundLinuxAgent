@@ -202,7 +202,7 @@ void PulseDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
     pa_operation_unref(op);
 }
 
-void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index)
+void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index)
 {
     /*
     std::cout << "----- Info ------" << std::endl;
@@ -239,7 +239,7 @@ void PulseDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
 
     const auto [deviceId, deviceName] = std::make_pair(std::string("SINC:") + info->name, std::string(info->description));
     const uint32_t volume = pa_cvolume_avg(&info->volume);
-    constexpr auto type = DeviceType::Render;
+    constexpr auto type = SoundDeviceFlowType::Render;
     const uint32_t index = info->index; 
 
     self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
@@ -262,7 +262,7 @@ void PulseDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
 
     const auto [deviceId, deviceName] = std::make_pair(std::string("SOURCE:") + info->name, std::string(info->description));
     const uint32_t volume = pa_cvolume_avg(&info->volume);
-    constexpr auto type = DeviceType::Capture;
+    constexpr auto type = SoundDeviceFlowType::Capture;
     const uint32_t index = info->index;
 
     self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);

@@ -5,65 +5,64 @@
 
 #include "ClassDefHelper.h"
 
-class AudioDeviceCollectionInterface;
-class DeviceCollectionObserver;
+class SoundDeviceCollectionInterface;
 class SoundDeviceInterface;
-class AudioDeviceCollectionObserverInterface;
+class SoundDeviceObserverInterface;
 
-enum class AudioDeviceCollectionEvent : uint8_t {
+enum class SoundDeviceEventType : uint8_t {
     None = 0,
     Discovered,
     Detached,
     VolumeChanged
 };
 
-enum class DeviceFlowEnum : uint8_t {
+enum class SoundDeviceFlowType : uint8_t {
     None = 0,
     Render,
     Capture,
     RenderAndCapture
 };
 
-class SoundAgent {
+class SoundAgent final {
 public:
-    static std::unique_ptr<AudioDeviceCollectionInterface> CreateDeviceCollection(
-        const std::wstring & nameFilter, bool bothHeadsetAndMicro = false);
+    static std::unique_ptr<SoundDeviceCollectionInterface> CreateDeviceCollection(
+        const std::string & nameFilter, bool bothHeadsetAndMicro = false);
 
     DISALLOW_COPY_MOVE(SoundAgent);
     SoundAgent() = delete;
     ~SoundAgent() = delete;
 };
 
-class AudioDeviceCollectionInterface {
+class SoundDeviceCollectionInterface {
 public:
     virtual size_t GetSize() const = 0;
     virtual std::unique_ptr<SoundDeviceInterface> CreateItem(size_t deviceNumber) const = 0;
 
-    virtual void Subscribe(AudioDeviceCollectionObserverInterface & observer) = 0;
-    virtual void Unsubscribe(AudioDeviceCollectionObserverInterface & observer) = 0;
+    virtual void Subscribe(SoundDeviceObserverInterface & observer) = 0;
+    virtual void Unsubscribe(SoundDeviceObserverInterface & observer) = 0;
 
     virtual void ResetContent() = 0;
 
-    AS_INTERFACE(AudioDeviceCollectionInterface);
-    DISALLOW_COPY_MOVE(AudioDeviceCollectionInterface);
+    AS_INTERFACE(SoundDeviceCollectionInterface);
+    DISALLOW_COPY_MOVE(SoundDeviceCollectionInterface);
 };
 
-class AudioDeviceCollectionObserverInterface {
+class SoundDeviceObserverInterface {
 public:
-    virtual void OnCollectionChanged(AudioDeviceCollectionEvent event, const std::wstring & devicePnpId) = 0;
-    virtual void OnTrace(const std::wstring & line) = 0;
-    virtual void OnTraceDebug(const std::wstring & line) = 0;
+    virtual void OnCollectionChanged(SoundDeviceEventType event, const std::string & devicePnpId) = 0;
+    virtual void OnTrace(const std::string & line) = 0;
+    virtual void OnTraceDebug(const std::string & line) = 0;
 
-    AS_INTERFACE(AudioDeviceCollectionObserverInterface);
-    DISALLOW_COPY_MOVE(AudioDeviceCollectionObserverInterface);
+    AS_INTERFACE(SoundDeviceObserverInterface);
+    DISALLOW_COPY_MOVE(SoundDeviceObserverInterface);
 };
 
 
 class SoundDeviceInterface {
 public:
-    virtual std::wstring GetName() const = 0;
-    virtual std::wstring GetPnpId() const = 0;
-    virtual DeviceFlowEnum GetFlow() const = 0;
+    virtual std::string GetName() const = 0;
+    virtual std::string GetPnpId() const = 0;
+    virtual SoundDeviceFlowType GetFlow() const = 0;
     virtual uint16_t GetCurrentRenderVolume() const = 0;
     virtual uint16_t GetCurrentCaptureVolume() const = 0;
 

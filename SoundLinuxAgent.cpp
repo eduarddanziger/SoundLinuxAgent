@@ -22,13 +22,16 @@ class ConsoleSubscriber final : public IDeviceSubscriber {
                 case DeviceEventType::VolumeChanged: eventTypeAsString = "VolumeChanged"; break;
             }
             const char* deviceTypeAsString = "";
-            switch(event.device.type) {
-                case DeviceType::Capture: deviceTypeAsString = "Capture"; break;
-                case DeviceType::Render: deviceTypeAsString = "Render"; break;
+            switch(event.device.GetFlow()) {
+                case SoundDeviceFlowType::Capture: deviceTypeAsString = "Capture"; break;
+                case SoundDeviceFlowType::Render: deviceTypeAsString = "Render"; break;
+            default: ;
+                deviceTypeAsString = "Undefined";
             }
             std::cout << "Got Event (" << eventTypeAsString << "): " << "\nid: " <<
-                event.device.pnpId << "\ntype: " << deviceTypeAsString <<
-                "\nname: " << event.device.name << "\nqvolume: " << event.device.volume << ".\n";
+                event.device.GetPnpId() << "\ntype: " << deviceTypeAsString <<
+                "\nname: " << event.device.GetName() << "\nrender volume: " << event.device.GetCurrentRenderVolume() <<
+                "\ncapture volume: " << event.device.GetCurrentCaptureVolume() << ".\n";
         }
 };
 

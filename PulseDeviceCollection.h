@@ -44,7 +44,7 @@ private:
     void StartMonitoring();
     void StopMonitoring();
 
-    void AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, DeviceType type, uint32_t index);
+    void AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index);
     void NotifySubscribers(const DeviceEvent& event);
 
     static void ContextStateCallback(pa_context* c, void* userdata);

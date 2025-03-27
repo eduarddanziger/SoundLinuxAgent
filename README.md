@@ -29,7 +29,7 @@ Alternatively, you can install directly from the build directory
 
 ## License
 
-This project is licensed under the terms of the [chosen license](LICENSE).
+This project is licensed under the terms of the [MIT License](LICENSE).
 
 ## Contact
 
