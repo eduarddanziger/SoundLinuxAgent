@@ -1,28 +1,41 @@
-﻿#include <iostream>
-#include <cstdlib>
+﻿#include "SpdLogSetup.h"
+#include "cpversion.h"
+#include "PulseDeviceCollection.h"
+#include "KeyInputThread.h"
+
+#include <pulse/pulseaudio.h>
+
+#include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <filesystem>
+#include <glib.h>
+#include <thread>
 
-#include "SpdLogSetup.h" // Include the spdlog setup header
-#include "cpversion.h" // generated version header
+using namespace std::literals;
 
-
-#include "AudioDeviceCollection.h"
-
-class ConsoleSubscriber : public IDeviceSubscriber {
+class ConsoleSubscriber final : public IDeviceSubscriber {
     public:
-        void onDeviceEvent(const DeviceEvent& event) override {
-            const char* typeStr = "";
+        void OnDeviceEvent(const DeviceEvent& event) override {
+            // ReSharper disable once CppUseAuto
+            auto eventTypeAsString = ""s;
             switch(event.type) {
-                case DeviceEventType::Added: typeStr = "Added"; break;
-                case DeviceEventType::Removed: typeStr = "Removed"; break;
-                case DeviceEventType::VolumeChanged: typeStr = "VolumeChanged"; break;
+                case DeviceEventType::Added: eventTypeAsString = "Added"; break;
+                case DeviceEventType::Removed: eventTypeAsString = "Removed"; break;
+                case DeviceEventType::VolumeChanged: eventTypeAsString = "VolumeChanged"; break;
             }
-            std::cout << "Device event: " << typeStr << " - " << event.device.name << "\n";
+            auto deviceTypeAsString = ""s;
+            switch(event.device.GetFlow()) {
+                case SoundDeviceFlowType::Capture: deviceTypeAsString = "Capture"; break;
+                case SoundDeviceFlowType::Render: deviceTypeAsString = "Render"; break;
+            default: ;
+                deviceTypeAsString = "Undefined";
+            }
+            std::cout << "Got Event (" << eventTypeAsString << "): " << "\nid: " <<
+                event.device.GetPnpId() << "\n""type: " << deviceTypeAsString <<
+                "\n""name: " << event.device.GetName() << "\n""render volume: " << event.device.GetCurrentRenderVolume() <<
+                "\n""capture volume: " << event.device.GetCurrentCaptureVolume() << ".\n";
         }
 };
-
 
 int main(int argc, char *argv[])
 {
@@ -43,17 +56,43 @@ int main(int argc, char *argv[])
         
         spdlog::info("Version {}, starting...", VERSION);
 
-        AudioDeviceCollection collection;
-        auto subscriber = std::make_shared<ConsoleSubscriber>();
-        
-        collection.subscribe(subscriber);
-        collection.startMonitoring();
+        PulseDeviceCollection collection;
 
-        // Run main loop
-        while(true) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+        const auto subscriber = std::make_shared<ConsoleSubscriber>();
+        collection.Subscribe(subscriber);
+
+        collection.Activate();
+        auto* loop = collection.GetMainLoop();
+
+        // Start the key input thread
+        std::thread inputThread([&]() {
+            keyInputThread(
+                [&collection, loop](char input) {  // Quit callback (executes when 'q' is pressed)
+                    if (input == 'q' || input == 'Q') {
+                        std::cout << "Quitting...\n";
+                        collection.Deactivate();
+                        g_main_loop_quit(loop);
+                        return true;
+                    }
+                    return false;
+                },
+                []() {  // Iteration callback (here called every 25 seconds)
+                    std::cout << "Press 'q' and Enter to quit\n";
+                },
+                25
+            );
+        });
+
+        // Run the main loop
+        g_main_loop_run(loop);
+
+        if (inputThread.joinable()) {
+            inputThread.join();
         }
 
+        collection.Unsubscribe(subscriber);
+        
+        spdlog::info("Main loop exited. Shutting down...");
     }
     catch (const std::exception & e)
     {

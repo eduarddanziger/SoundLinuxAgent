@@ -1,7 +1,7 @@
 # SoundLinuxAgent
 
-AudioTest is a test application for audio processing using PulseAudio in C++.
-
+Sound Agent Agent detects and visualizes audio endpoint devices under Linux using PulseAudio (C++). It handles audio notifications and device changes.
+The Sound Agent Service collects audio device information and sends it to a remote server.
 
 ## Requirements
 
@@ -12,7 +12,7 @@ AudioTest is a test application for audio processing using PulseAudio in C++.
 
 ## Building
 
-Follow these steps to build AudioTest:
+Follow these steps to build SoundLinuxAgent:
 
 1. **Clone the repository**
 2. **Create a build directory and navigate into it**
@@ -22,15 +22,14 @@ Follow these steps to build AudioTest:
 
 ## Installation
 
-To install AudioTest using the generated DEB package:
-Alternatively, you can install directly from the build directory:
+To install SoundLinuxAgent using the generated DEB package:
+Alternatively, you can install directly from the build directory
 
 ## Usage
 
-
 ## License
 
-This project is licensed under the terms of the [chosen license](LICENSE).
+This project is licensed under the terms of the [MIT License](LICENSE).
 
 ## Contact
 
