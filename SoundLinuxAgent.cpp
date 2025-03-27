@@ -1,27 +1,29 @@
-﻿#include <iostream>
+﻿#include "SpdLogSetup.h"
+#include "cpversion.h"
+#include "PulseDeviceCollection.h"
+#include "KeyInputThread.h"
+
+#include <pulse/pulseaudio.h>
+
+#include <iostream>
 #include <memory>
 #include <filesystem>
 #include <glib.h>
 #include <thread>
-#include <pulse/pulseaudio.h>
 
-
-#include "SpdLogSetup.h" // Include the spdlog setup header
-#include "cpversion.h" // generated version header
-#include "PulseDeviceCollection.h"
-#include "KeyInputThread.h" // Add this include for the keyInputThread function
+using namespace std::literals;
 
 class ConsoleSubscriber final : public IDeviceSubscriber {
     public:
         void OnDeviceEvent(const DeviceEvent& event) override {
             // ReSharper disable once CppUseAuto
-            const char* eventTypeAsString = "";
+            auto eventTypeAsString = ""s;
             switch(event.type) {
                 case DeviceEventType::Added: eventTypeAsString = "Added"; break;
                 case DeviceEventType::Removed: eventTypeAsString = "Removed"; break;
                 case DeviceEventType::VolumeChanged: eventTypeAsString = "VolumeChanged"; break;
             }
-            const char* deviceTypeAsString = "";
+            auto deviceTypeAsString = ""s;
             switch(event.device.GetFlow()) {
                 case SoundDeviceFlowType::Capture: deviceTypeAsString = "Capture"; break;
                 case SoundDeviceFlowType::Render: deviceTypeAsString = "Render"; break;
@@ -29,9 +31,9 @@ class ConsoleSubscriber final : public IDeviceSubscriber {
                 deviceTypeAsString = "Undefined";
             }
             std::cout << "Got Event (" << eventTypeAsString << "): " << "\nid: " <<
-                event.device.GetPnpId() << "\ntype: " << deviceTypeAsString <<
-                "\nname: " << event.device.GetName() << "\nrender volume: " << event.device.GetCurrentRenderVolume() <<
-                "\ncapture volume: " << event.device.GetCurrentCaptureVolume() << ".\n";
+                event.device.GetPnpId() << "\n""type: " << deviceTypeAsString <<
+                "\n""name: " << event.device.GetName() << "\n""render volume: " << event.device.GetCurrentRenderVolume() <<
+                "\n""capture volume: " << event.device.GetCurrentCaptureVolume() << ".\n";
         }
 };
 

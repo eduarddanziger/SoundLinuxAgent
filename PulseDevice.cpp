@@ -1,5 +1,8 @@
 ﻿#include "PulseDevice.h"
 
+#include <pulse/volume.h>
+
+
 PulseDevice::~PulseDevice() = default;
 
 PulseDevice::PulseDevice()
@@ -95,5 +98,17 @@ void PulseDevice::SetCurrentRenderVolume(uint16_t volume)
 void PulseDevice::SetCurrentCaptureVolume(uint16_t volume)
 {
     captureVolume_ = volume;
+}
+
+uint16_t PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(uint32_t pulseAudioVolume)
+{
+	uint16_t normalizedVolume = 0;
+	if (pulseAudioVolume > 0)
+	{
+        normalizedVolume = static_cast<uint16_t>(
+                (pulseAudioVolume - PA_VOLUME_MUTED) * 1000 / (PA_VOLUME_NORM - PA_VOLUME_MUTED)
+            );
+	}
+	return normalizedVolume;
 }
 

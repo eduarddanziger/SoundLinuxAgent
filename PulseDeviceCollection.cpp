@@ -1,11 +1,12 @@
 #include "PulseDeviceCollection.h"
-#include <iostream>
-#include <pulse/subscribe.h>
-#include <pulse/glib-mainloop.h>
-#include <pulse/proplist.h>
 
 #include "ScopeLogger.h"
 
+
+#include <pulse/subscribe.h>
+#include <pulse/glib-mainloop.h>
+#include <pulse/proplist.h>
+#include <iostream>
 
 PulseDeviceCollection::PulseDeviceCollection()
     : mainloop_(nullptr)
@@ -213,7 +214,7 @@ void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const st
     */
 
     // Add or update the sink in the device collection
-    PulseDevice device(id, name, type, index, volume);
+    const PulseDevice device(id, name, type, volume);
 
     devices_[index] = device;
 
@@ -237,8 +238,9 @@ void PulseDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
 
     spdlog::info("Found sink '{}' with index {}.", info->name, info->index);
 
-    const auto [deviceId, deviceName] = std::make_pair(std::string("SINC:") + info->name, std::string(info->description));
-    const uint32_t volume = pa_cvolume_avg(&info->volume);
+    const auto [deviceId, deviceName] = std::make_pair(std::string("SINK: ") + info->name, std::string(info->description));
+    const uint32_t volumePulseAudio = pa_cvolume_avg(&info->volume);
+	const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
     constexpr auto type = SoundDeviceFlowType::Render;
     const uint32_t index = info->index; 
 
@@ -260,7 +262,7 @@ void PulseDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
 
     spdlog::info("Found source '{}' with index {}.", info->name, info->index);
 
-    const auto [deviceId, deviceName] = std::make_pair(std::string("SOURCE:") + info->name, std::string(info->description));
+    const auto [deviceId, deviceName] = std::make_pair(std::string("SOURCE: ") + info->name, std::string(info->description));
     const uint32_t volume = pa_cvolume_avg(&info->volume);
     constexpr auto type = SoundDeviceFlowType::Capture;
     const uint32_t index = info->index;
