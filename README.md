@@ -25,7 +25,7 @@
 
 ## Installation
 
-### To install SoundLinuxAgent using the generated DEB package:
+#### To install SoundLinuxAgent using the generated DEB package:
 
 1. **Build the project and generate the DEB package:**
 
@@ -46,15 +46,15 @@
    sudo apt-get install -f
    ```
 
-### Alternatively, you can install directly from the build directory
+#### Alternatively, you can install directly from the build directory
 
 ## License
 
-### This project is licensed under the terms of the [MIT License](LICENSE).
+#### This project is licensed under the terms of the [MIT License](LICENSE).
 
 ## Contact
 
-### For questions or suggestions, please contact:
+#### For questions or suggestions, please contact:
 
 - **Eduard Danziger**
 - **Email: [edanziger@gmx.de](mailto:edanziger@gmx.de)**
