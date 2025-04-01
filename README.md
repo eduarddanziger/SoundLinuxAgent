@@ -25,8 +25,6 @@ Follow these steps to build SoundLinuxAgent:
 To install SoundLinuxAgent using the generated DEB package:
 Alternatively, you can install directly from the build directory
 
-## Usage
-
 ## License
 
 This project is licensed under the terms of the [MIT License](LICENSE).
