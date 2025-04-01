@@ -54,8 +54,7 @@
 
 ## Contact
 
-#### For questions or suggestions, please contact:
+**Eduard Danziger**
 
-- **Eduard Danziger**
-- **Email: [edanziger@gmx.de](mailto:edanziger@gmx.de)**
+**Email: [edanziger@gmx.de](mailto:edanziger@gmx.de)**
 
