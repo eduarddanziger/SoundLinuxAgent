@@ -27,20 +27,12 @@
 
 #### To install SoundLinuxAgent using the generated DEB package:
 
-1. **Build the project and generate the DEB package:**
-
-   ```bash
-   mkdir -p build
-   cd build
-   cmake ..
-   cmake --build .
-   ```
-2. **Install the package:**
+1. **Install a DEB-package from latest GitHub-Release:**
 
    ```bash
    sudo dpkg -i SoundLinuxAgent-x.x.x.deb
    ```
-3. **If there are missing dependencies, fix them by running:**
+2. **If there are missing dependencies, fix them by running:**
 
    ```bash
    sudo apt-get install -f
