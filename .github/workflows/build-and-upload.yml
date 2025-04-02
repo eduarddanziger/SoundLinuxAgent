@@ -80,7 +80,7 @@ jobs:
     - name: Upload DEB package to GitHub Packages
       uses: actions/upload-artifact@v4
       with:
-        name: AudioTest-deb
+        name: SoundLinuxAgent-deb
         path: build/*.deb
         overwrite: true
 
@@ -95,11 +95,11 @@ jobs:
     - name: Download DEB package
       uses: actions/download-artifact@v4
       with:
-        name: AudioTest-deb
+        name: SoundLinuxAgent-deb
         path: build
 
     - name: Create Release
       run: |
         VERS=${{ needs.build.outputs.version }}
         echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-        gh release create "$VERS" build/*.deb --title "AudioTest $VERS" --notes "Release of AudioTest $VERS"
+        gh release create "$VERS" build/*.deb --title "SoundLinuxAgent $VERS" --notes "Release of SoundLinuxAgent $VERS"
