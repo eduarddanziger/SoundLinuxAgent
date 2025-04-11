@@ -1,7 +1,6 @@
 // ReSharper disable CppClangTidyBugproneMacroParentheses
 #pragma once
 
-
 #ifndef DISALLOW_COPY
 #define DISALLOW_COPY(TypeName) \
   TypeName(const TypeName&) = delete; \
