@@ -137,10 +137,11 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
     LOG_SCOPE();
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
     const auto facility = t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK;
-    const auto type = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
+    const auto operation = t & PA_SUBSCRIPTION_EVENT_TYPE_MASK;
 
     if (facility == PA_SUBSCRIPTION_EVENT_SINK) {
-        if (type == PA_SUBSCRIPTION_EVENT_REMOVE) {
+        // if (operation == PA_SUBSCRIPTION_EVENT_NEW) 
+        if (operation == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SINK index {}: Removing...", idx);
             if (self->devices_.count(idx) > 0) {
                 PulseDevice device = self->devices_[idx];
@@ -151,6 +152,11 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
                 self->NotifySubscribers(event);
             }
         }
+        else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE) {
+            spdlog::info("SINC index {}: Volume changed...", idx);
+            pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
+            pa_operation_unref(op);
+        }
         else {
             spdlog::info("SINK index {}: Adding or updating...", idx);
             pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
@@ -158,7 +164,8 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         }
     }
     else if (facility == PA_SUBSCRIPTION_EVENT_SOURCE) {
-        if (type == PA_SUBSCRIPTION_EVENT_REMOVE) {
+        // if (operation == PA_SUBSCRIPTION_EVENT_NEW) 
+        if (operation == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SOURCE index {}: Removing...", idx);
             if (self->devices_.count(idx) > 0) {
                 PulseDevice device = self->devices_[idx];
@@ -168,6 +175,11 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
                 DeviceEvent event{ device, DeviceEventType::Removed };
                 self->NotifySubscribers(event);
             }
+        }
+        else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE) {
+            spdlog::info("SOURCE index {}: Volume changed...", idx);
+            pa_operation* op = pa_context_get_source_info_by_index(c, idx, SourceInfoCallback, self);
+            pa_operation_unref(op);
         }
         else {
             spdlog::info("SOURCE index {}: Adding or updating...", idx);
