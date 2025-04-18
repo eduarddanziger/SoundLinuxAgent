@@ -29,16 +29,12 @@ public:
     PulseDeviceCollection();
     ~PulseDeviceCollection();
 
-    void Activate();
-    void Deactivate();
+    void ActivateAndStartLoop();
+    void DeactivateAndStopLoop();
 
     void Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
     void Unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber);
     
-    [[nodiscard]] GMainLoop* GetMainLoop() const {
-        return gMainLoop_;
-    }
-
 private:
     void GetServerInfo();
     void StartMonitoring();

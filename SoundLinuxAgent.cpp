@@ -61,17 +61,13 @@ int main(int argc, char *argv[])
         const auto subscriber = std::make_shared<ConsoleSubscriber>();
         collection.Subscribe(subscriber);
 
-        collection.Activate();
-        auto* loop = collection.GetMainLoop();
-
         // Start the key input thread
         std::thread inputThread([&]() {
             keyInputThread(
-                [&collection, loop](char input) {  // Quit callback (executes when 'q' is pressed)
+                [&collection](char input) {  // Quit callback (executes when 'q' is pressed)
                     if (input == 'q' || input == 'Q') {
                         std::cout << "Quitting...\n";
-                        collection.Deactivate();
-                        g_main_loop_quit(loop);
+                        collection.DeactivateAndStopLoop();
                         return true;
                     }
                     return false;
@@ -83,8 +79,8 @@ int main(int argc, char *argv[])
             );
         });
 
-        // Run the main loop
-        g_main_loop_run(loop);
+        // Activate and run the main loop
+        collection.ActivateAndStartLoop();
 
         if (inputThread.joinable()) {
             inputThread.join();

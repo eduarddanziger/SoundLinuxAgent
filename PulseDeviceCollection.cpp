@@ -27,16 +27,18 @@ PulseDeviceCollection::~PulseDeviceCollection() {
     if(gMainLoop_) g_main_loop_unref(gMainLoop_);
 }
 
-void PulseDeviceCollection::Activate() {
+void PulseDeviceCollection::ActivateAndStartLoop() {
     LOG_SCOPE();
     pa_context_set_state_callback(context_, ContextStateCallback, this);
     pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
+	g_main_loop_run(gMainLoop_);
 }
 
-void PulseDeviceCollection::Deactivate() {
+void PulseDeviceCollection::DeactivateAndStopLoop() {
     LOG_SCOPE();
     StopMonitoring();
     pa_context_disconnect(context_);
+    g_main_loop_quit(gMainLoop_);
 }
 
 void PulseDeviceCollection::Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber) {

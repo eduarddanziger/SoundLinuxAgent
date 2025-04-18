@@ -12,7 +12,7 @@ endif()
 project("SoundLinuxAgent")
 
 # Add source to this project's executable.
-add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp" "PulseDeviceCollection.cpp" "SoundAgentInterface.cpp" "PulseDevice.cpp")
+add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp" "PulseDeviceCollection.cpp" "SoundAgent.cpp" "PulseDevice.cpp")
 
 # Enforce out-of-source builds
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
