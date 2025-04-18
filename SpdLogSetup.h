@@ -34,5 +34,5 @@ inline void SpdLogSetup(const std::string& logFileName = "AudioTest.log",
     spdlog::set_level(logLevel); // Set global log level
 
     // Set custom log pattern (excluding logger name)
-    spdlog::set_pattern("%^%Y-%m-%d %H:%M:%S.%e [%l] %v%$");
+    spdlog::set_pattern("%^%Y-%m-%d %H:%M:%S.%f [%l] %v%$");
 }

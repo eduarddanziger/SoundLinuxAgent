@@ -113,18 +113,18 @@ void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) 
             
         case PA_CONTEXT_FAILED:
             spdlog::error(
-                "PulseAudio context FAILED (state {}): {}"
+                "PulseAudio context got FAILED status (state {}): {}"
               , state, pa_strerror(pa_context_errno(c))
             );
             break;
             
         case PA_CONTEXT_TERMINATED:
-            spdlog::info("PulseAudio context TERMINATED, state: {}", state);
+            spdlog::info("PulseAudio context got TERMINATED status, state: {}", state);
             break;
             
         default:
             // Still connecting or other states
-            spdlog::info("PulseAudio context gets state: {}", state);
+            spdlog::info("PulseAudio context's state: {}", state);
             break;
     }
 }
