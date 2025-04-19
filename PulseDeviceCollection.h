@@ -40,7 +40,7 @@ private:
     void StartMonitoring();
     void StopMonitoring();
 
-    void AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index);
+    void AddOrUpdateAndNotify(const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index);
     void NotifySubscribers(const DeviceEvent& event);
 
     static void ContextStateCallback(pa_context* c, void* userdata);
@@ -53,6 +53,6 @@ private:
     pa_glib_mainloop* mainloop_;
     pa_context* context_;
     GMainLoop* gMainLoop_;
-    std::unordered_map<uint32_t, PulseDevice> devices_;
+    std::unordered_map<std::string, PulseDevice> devices_;
     std::vector<std::weak_ptr<IDeviceSubscriber>> subscribers_;
 };

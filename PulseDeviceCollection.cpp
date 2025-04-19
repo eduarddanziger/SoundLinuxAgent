@@ -143,7 +143,10 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         // if (operation == PA_SUBSCRIPTION_EVENT_NEW) 
         if (operation == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SINK index {}: Removing...", idx);
-            if (self->devices_.count(idx) > 0) {
+/*  
+            pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
+            pa_operation_unref(op);
+           if (self->devices_.count(idx) > 0) {
                 PulseDevice device = self->devices_[idx];
                 self->devices_.erase(idx);
 
@@ -151,6 +154,7 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
                 DeviceEvent event{ device, DeviceEventType::Removed };
                 self->NotifySubscribers(event);
             }
+ */        
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE) {
             spdlog::info("SINC index {}: Volume changed...", idx);
@@ -167,14 +171,6 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         // if (operation == PA_SUBSCRIPTION_EVENT_NEW) 
         if (operation == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SOURCE index {}: Removing...", idx);
-            if (self->devices_.count(idx) > 0) {
-                PulseDevice device = self->devices_[idx];
-                self->devices_.erase(idx);
-
-                // Notify about removal
-                DeviceEvent event{ device, DeviceEventType::Removed };
-                self->NotifySubscribers(event);
-            }
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE) {
             spdlog::info("SOURCE index {}: Volume changed...", idx);
@@ -217,20 +213,12 @@ void PulseDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
     pa_operation_unref(op);
 }
 
-void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& id, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index)
+void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index)
 {
-    /*
-    std::cout << "----- Info ------" << std::endl;
-    std::cout << "Id (orig .name): " << id << std::endl;
-    std::cout << "Name (orig .description): " << name << std::endl;
-    std::cout << "Volume: " << volume << std::endl;
-    std::cout << "Index: " << index << std::endl;
-    */
-
     // Add or update the sink in the device collection
-    const PulseDevice device(id, name, type, volume);
+    const PulseDevice device(pnpId, name, type, volume, 0);
 
-    devices_[index] = device;
+    devices_[pnpId] = device;
 
     // Notify subscribers about the new/updated device
     const DeviceEvent event{ device, DeviceEventType::Added} ;
@@ -252,13 +240,25 @@ void PulseDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_
 
     spdlog::info("Found sink '{}' with index {}.", info->name, info->index);
 
-    const auto [deviceId, deviceName] = std::make_pair(std::string("SINK: ") + info->name, std::string(info->description));
+    const std::string deviceName = info->description;
     const uint32_t volumePulseAudio = pa_cvolume_avg(&info->volume);
 	const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
     constexpr auto type = SoundDeviceFlowType::Render;
-    const uint32_t index = info->index; 
+    const uint32_t index = info->index;
 
-    self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
+    std::string pnpId;
+    const char* pnpIdPtr = pa_proplist_gets(info->proplist, "device.bus_path");
+    if (pnpIdPtr != nullptr) {
+        spdlog::info("device.bus_path property found, use it as a PnP ID");
+        pnpId = pnpIdPtr;
+    }
+    else
+    {
+        spdlog::info("device.bus_path property not found, use the name as a PnP ID");
+        pnpId = info->name;
+    }
+
+    self->AddOrUpdateAndNotify(pnpId, deviceName, volume, type, index);
 }
 
 void PulseDeviceCollection::SourceInfoCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
@@ -276,12 +276,24 @@ void PulseDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
 
     spdlog::info("Found source '{}' with index {}.", info->name, info->index);
 
-    const auto [deviceId, deviceName] = std::make_pair(std::string("SOURCE: ") + info->name, std::string(info->description));
+    const std::string deviceName = info->description;
     const uint32_t volume = pa_cvolume_avg(&info->volume);
     constexpr auto type = SoundDeviceFlowType::Capture;
     const uint32_t index = info->index;
 
-    self->AddOrUpdateAndNotify(deviceId, deviceName, volume, type, index);
+    std::string pnpId;
+    const char* pnpIdPtr = pa_proplist_gets(info->proplist, "device.bus_path");
+    if (pnpIdPtr != nullptr) {
+        spdlog::info("device.bus_path property found, use it as a PnP ID");
+        pnpId = pnpIdPtr;
+    }
+    else
+    {
+        spdlog::info("device.bus_path property not found, use the name as a PnP ID");
+        pnpId = info->name;
+    }
+
+    self->AddOrUpdateAndNotify(pnpId, deviceName, volume, type, index);
 }
 
 void PulseDeviceCollection::NotifySubscribers(const DeviceEvent& event) {

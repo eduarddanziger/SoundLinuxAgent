@@ -11,7 +11,7 @@ public:
 
 public:
     PulseDevice();
-    PulseDevice(std::string pnpGuid, std::string name, SoundDeviceFlowType flow, uint16_t renderVolume, uint16_t captureVolume = 0);
+    PulseDevice(std::string pnpGuid, std::string name, SoundDeviceFlowType flow, uint16_t renderVolume, uint16_t captureVolume);
     PulseDevice(const PulseDevice & toCopy);
     PulseDevice(PulseDevice && toMove) noexcept;
     PulseDevice & operator=(const PulseDevice & toCopy);
