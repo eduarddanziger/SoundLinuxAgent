@@ -41,14 +41,24 @@ void PulseDeviceCollection::DeactivateAndStopLoop() {
     g_main_loop_quit(gMainLoop_);
 }
 
-void PulseDeviceCollection::Subscribe(std::shared_ptr<IDeviceSubscriber> subscriber) {
-    subscribers_.emplace_back(subscriber);
+void PulseDeviceCollection::Subscribe(SoundDeviceObserverInterface & observer)
+{
+    observers_.insert(&observer);
 }
 
-void PulseDeviceCollection::Unsubscribe(std::shared_ptr<IDeviceSubscriber> subscriber)
+void PulseDeviceCollection::Unsubscribe(SoundDeviceObserverInterface & observer)
 {
-    std::erase_if(subscribers_,
-                  [&](const auto & wp) { return wp.lock() == subscriber; });
+    observers_.erase(&observer);
+}
+
+std::unique_ptr<SoundDeviceInterface> PulseDeviceCollection::CreateItem(const std::string & devicePnpId) const
+{
+	LOG_SCOPE();
+    if (!pnpToDeviceMap_.contains(devicePnpId))
+    {
+        throw std::runtime_error("Device pnpId not found");
+    }
+    return std::make_unique<PulseDevice>(pnpToDeviceMap_.at(devicePnpId));
 }
 
 void PulseDeviceCollection::StartMonitoring() {
@@ -146,9 +156,9 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
 /*  
             pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
             pa_operation_unref(op);
-           if (self->devices_.count(idx) > 0) {
-                PulseDevice device = self->devices_[idx];
-                self->devices_.erase(idx);
+           if (self->pnpToDeviceMap_.count(idx) > 0) {
+                PulseDevice device = self->pnpToDeviceMap_[idx];
+                self->pnpToDeviceMap_.erase(idx);
 
                 // Notify about removal
                 DeviceEvent event{ device, DeviceEventType::Removed };
@@ -218,11 +228,18 @@ void PulseDeviceCollection::AddOrUpdateAndNotify(const std::string& pnpId, const
     // Add or update the sink in the device collection
     const PulseDevice device(pnpId, name, type, volume, 0);
 
-    devices_[pnpId] = device;
+    pnpToDeviceMap_[pnpId] = device;
 
     // Notify subscribers about the new/updated device
-    const DeviceEvent event{ device, DeviceEventType::Added} ;
-    NotifySubscribers(event);
+    NotifyObservers(SoundDeviceEventType::Confirmed, pnpId);
+}
+
+void PulseDeviceCollection::NotifyObservers(SoundDeviceEventType action, const std::string & devicePNpId) const
+{
+    for (auto* observer : observers_)
+    {
+        observer->OnCollectionChanged(action, devicePNpId);
+    }
 }
 
 void PulseDeviceCollection::SinkInfoCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
@@ -296,18 +313,3 @@ void PulseDeviceCollection::SourceInfoCallback(pa_context* context, const pa_sou
     self->AddOrUpdateAndNotify(pnpId, deviceName, volume, type, index);
 }
 
-void PulseDeviceCollection::NotifySubscribers(const DeviceEvent& event) {
-    LOG_SCOPE();
-    // Iterate through the list of subscribers
-    for (auto it = subscribers_.begin(); it != subscribers_.end();) {
-        // Lock the weak_ptr to get a shared_ptr
-        if (auto subscriber = it->lock()) {
-            // Notify the subscriber about the event
-            subscriber->OnDeviceEvent(event);
-            ++it;  // Move to the next subscriber
-        } else {
-            // If the weak_ptr is expired (subscriber no longer exists), remove it from the list
-            it = subscribers_.erase(it);
-        }
-    }
-}

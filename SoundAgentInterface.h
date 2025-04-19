@@ -36,14 +36,10 @@ public:
 
 class SoundDeviceCollectionInterface {
 public:
-    virtual size_t GetSize() const = 0;
-    virtual std::unique_ptr<SoundDeviceInterface> CreateItem(size_t deviceNumber) const = 0;
     virtual std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const = 0;
 
     virtual void Subscribe(SoundDeviceObserverInterface& observer) = 0;
     virtual void Unsubscribe(SoundDeviceObserverInterface& observer) = 0;
-
-    virtual void ResetContent() = 0;
 
     AS_INTERFACE(SoundDeviceCollectionInterface);
     DISALLOW_COPY_MOVE(SoundDeviceCollectionInterface);
@@ -52,8 +48,6 @@ public:
 class SoundDeviceObserverInterface {
 public:
     virtual void OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId) = 0;
-    virtual void OnTrace(const std::string& line) = 0;
-    virtual void OnTraceDebug(const std::string& line) = 0;
 
     AS_INTERFACE(SoundDeviceObserverInterface);
     DISALLOW_COPY_MOVE(SoundDeviceObserverInterface);
