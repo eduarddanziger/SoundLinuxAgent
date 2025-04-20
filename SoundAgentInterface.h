@@ -26,8 +26,7 @@ enum class SoundDeviceFlowType : uint8_t {
 
 class SoundAgent final {
 public:
-    static std::unique_ptr<SoundDeviceCollectionInterface> CreateDeviceCollection(
-        const std::string& nameFilter, bool bothHeadsetAndMicro = false);
+    static std::unique_ptr<SoundDeviceCollectionInterface> CreateDeviceCollection();
 
     DISALLOW_COPY_MOVE(SoundAgent);
     SoundAgent() = delete;
@@ -36,7 +35,10 @@ public:
 
 class SoundDeviceCollectionInterface {
 public:
-    virtual std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const = 0;
+    [[nodiscard]] virtual std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const = 0;
+
+	virtual void ActivateAndStartLoop() = 0;
+	virtual void DeactivateAndStopLoop() = 0;
 
     virtual void Subscribe(SoundDeviceObserverInterface& observer) = 0;
     virtual void Unsubscribe(SoundDeviceObserverInterface& observer) = 0;

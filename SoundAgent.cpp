@@ -2,11 +2,10 @@
 
 #include <stdexcept>
 
-//#include "SoundDeviceCollection.h"
+#include "PulseDeviceCollection.h"
 
 
-std::unique_ptr<SoundDeviceCollectionInterface> SoundAgent::CreateDeviceCollection(const std::string& nameFilter, bool bothHeadsetAndMicro)
+std::unique_ptr<SoundDeviceCollectionInterface> SoundAgent::CreateDeviceCollection()
 {
-//    return std::make_unique<ed::audio::SoundDeviceCollection>(nameFilter, bothHeadsetAndMicro);
-	return nullptr;
+    return std::make_unique<PulseDeviceCollection>();
 }
