@@ -3,7 +3,7 @@
 #include <memory>
 #include <functional>
 #include <unordered_map>
-#include <glib.h>
+//#include <glib.h>
 #include <set>
 
 #include "PulseDevice.h"

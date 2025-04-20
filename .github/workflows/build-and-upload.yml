@@ -6,6 +6,8 @@ on:
       - main
     tags:
       - 'Release-*'
+
+  workflow_dispatch:
   
 permissions:
   contents: write
@@ -29,10 +31,13 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
 
-    - name: Install dependencies
+    - name: Install vcpkg
       run: |
-        sudo apt-get update
-        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libglib2.0-dev
+        git clone https://github.com/microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.sh
+
+    - name: Install dependencies with vcpkg
+      run: ./vcpkg/vcpkg install
 
     - name: Get version from Git tags
       id: get_version
@@ -65,7 +70,7 @@ jobs:
         echo "Using version: $VERSION"
 
     - name: Configure CMake
-      run: cmake -G Ninja -B build -DCPACK_PKG_VERSION=${{ steps.get_version.outputs.VERSION }}
+      run: cmake -G Ninja -B build -DCPACK_PKG_VERSION=${{ steps.get_version.outputs.VERSION }} -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
     - name: Build with Ninja
       run: cmake --build build
