@@ -23,7 +23,6 @@ public:
 			const auto device = collection_.CreateItem(devicePnpId);
 			if (device)
 			{
-				spdlog::info("Device created: {}", device->GetName());
 				PrintDeviceInfo(device.get());
 			}
 			else
