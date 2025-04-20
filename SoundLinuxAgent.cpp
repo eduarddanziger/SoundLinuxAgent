@@ -9,8 +9,6 @@
 #include <thread>
 
 
-using namespace std::literals;
-
 int main(int argc, char *argv[])
 {
     // Check for version option

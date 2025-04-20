@@ -9,7 +9,6 @@
 #include "PulseDevice.h"
 #include "SoundAgentInterface.h"
 
-
 #include <pulse/glib-mainloop.h>
 #include <pulse/pulseaudio.h>
 
@@ -42,15 +41,30 @@ private:
     static void SubscribeCallback(pa_context* c, pa_subscription_event_type_t t, uint32_t idx, void* userdata);
     static void ServerInfoCallback(pa_context* c, const pa_server_info* i, void* userdata);
 
-    static void InitialInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata);
-    static void NewInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata);
-    void DeliverSinkDeviceAndState(SoundDeviceEventType event, const pa_sink_info& info);
 
-    static void InitialInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata);
-    static void NewInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata);
-    void DeliverSourceDeviceAndState(SoundDeviceEventType event, const pa_source_info& info);
+    template<typename INFO_T_>
+    static void InfoCallback(pa_context* context, const INFO_T_* info, int eol, void* userdata,
+        SoundDeviceEventType event);
 
-public:
+    template<typename INFO_T_>
+    void DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info);
+
+    // Wrapper functions to maintain the original callback signatures
+    static void InitialInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
+        InfoCallback<pa_sink_info>(context, info, eol, userdata, SoundDeviceEventType::Confirmed);
+    }
+
+    static void NewInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
+        InfoCallback<pa_sink_info>(context, info, eol, userdata, SoundDeviceEventType::Discovered);
+    }
+
+    static void InitialInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
+        InfoCallback<pa_source_info>(context, info, eol, userdata, SoundDeviceEventType::Confirmed);
+    }
+
+    static void NewInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
+        InfoCallback<pa_source_info>(context, info, eol, userdata, SoundDeviceEventType::Discovered);
+    }
 
 private:
     pa_glib_mainloop* mainLoop_;

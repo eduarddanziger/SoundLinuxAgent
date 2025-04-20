@@ -1,3 +1,5 @@
+#pragma once
+
 #include "SoundAgentInterface.h"
 
 #include <iostream>

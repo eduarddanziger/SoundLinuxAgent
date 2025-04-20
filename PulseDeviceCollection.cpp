@@ -2,11 +2,12 @@
 
 #include "ScopeLogger.h"
 
-
 #include <pulse/subscribe.h>
 #include <pulse/glib-mainloop.h>
 #include <pulse/proplist.h>
+
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 PulseDeviceCollection::PulseDeviceCollection()
     : mainLoop_(nullptr)
@@ -111,6 +112,59 @@ void PulseDeviceCollection::GetServerInfo() {
     pa_operation* op = pa_context_get_server_info(context_, ServerInfoCallback, this);
     pa_operation_unref(op);
 }
+
+template<typename InfoType>
+void PulseDeviceCollection::InfoCallback(pa_context* context, const InfoType* info, int eol, void* userdata,
+    SoundDeviceEventType event) {
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
+
+    if (eol) {
+        return;
+    }
+
+    if (!info) {
+        std::cerr << "Failed to get pulse audio device info." << std::endl;
+        return;
+    }
+
+    self->DeliverDeviceAndState(event, *info);
+}
+
+template<typename INFO_T_>
+void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info) {
+    constexpr auto deviceFlowType = std::is_same_v<INFO_T_, pa_sink_info> ? SoundDeviceFlowType::Render :
+        (std::is_same_v<INFO_T_, pa_source_info> ? SoundDeviceFlowType::Capture : SoundDeviceFlowType::None);
+    constexpr auto isCapture = std::is_same_v<INFO_T_, pa_source_info>;
+    static_assert(deviceFlowType != SoundDeviceFlowType::None,
+        "DeliverDeviceAndState can only be used with pa_sink_info or pa_source_info types");
+
+    const std::string deviceName = info.description;
+    const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
+    const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
+
+    const uint32_t index = info.index;
+    std::string pnpId;
+
+    // ReSharper disable once CppTooWideScopeInitStatement
+    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "device.bus_path");
+    if (pnpIdPtr != nullptr) {
+        spdlog::info("device.bus_path property found, use it as a PnP ID");
+        pnpId = pnpIdPtr;
+    }
+    else {
+        spdlog::info("device.bus_path property not found, use the name as a PnP ID");
+        pnpId = info.name;
+    }
+
+    if (event == SoundDeviceEventType::Confirmed || event == SoundDeviceEventType::Discovered) {
+        AddOrUpdateAndNotify(event, pnpId, deviceName, volume, deviceFlowType, index);
+    }
+    else if (event != SoundDeviceEventType::Detached) {
+        // NotifyObservers(event, pnpId);
+    }
+}
+
+
 
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
@@ -244,136 +298,4 @@ void PulseDeviceCollection::NotifyObservers(SoundDeviceEventType action, const s
     }
 }
 
-void PulseDeviceCollection::InitialInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata)
-{
-    auto* self = static_cast<PulseDeviceCollection*>(userdata);
-
-    if (eol) {
-        return;
-    }
-
-    if (!info) {
-        std::cerr << "Failed to get sink info." << std::endl;
-        return;
-    }
-
-    self->DeliverSinkDeviceAndState(SoundDeviceEventType::Confirmed, *info);
-}
-
-void PulseDeviceCollection::InitialInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata)
-{
-    auto* self = static_cast<PulseDeviceCollection*>(userdata);
-
-    if (eol) {
-        return;
-    }
-
-    if (!info) {
-        std::cerr << "Failed to get source info." << std::endl;
-        return;
-    }
-
-    self->DeliverSourceDeviceAndState(SoundDeviceEventType::Confirmed, *info);
-}
-
-void PulseDeviceCollection::NewInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata)
-{
-    auto* self = static_cast<PulseDeviceCollection*>(userdata);
-
-    if (eol) {
-        return;
-    }
-
-    if (!info) {
-        std::cerr << "Failed to get sink info." << std::endl;
-        return;
-    }
-
-    self->DeliverSinkDeviceAndState(SoundDeviceEventType::Discovered, *info);
-}
-
-void PulseDeviceCollection::NewInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata)
-{
-    auto* self = static_cast<PulseDeviceCollection*>(userdata);
-
-    if (eol) {
-        return;
-    }
-
-    if (!info) {
-        std::cerr << "Failed to get source info." << std::endl;
-        return;
-    }
-
-    self->DeliverSourceDeviceAndState(SoundDeviceEventType::Discovered, *info);
-}
-
-
-
-
-void PulseDeviceCollection::DeliverSinkDeviceAndState(SoundDeviceEventType event, const pa_sink_info& info)
-{
-    constexpr auto deviceFlowType = SoundDeviceFlowType::Render;
-
-    const std::string deviceName = info.description;
-    const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
-    const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
-
-    const uint32_t index = info.index;
-    std::string pnpId;
-    // ReSharper disable once CppTooWideScopeInitStatement
-    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "device.bus_path");
-    if (pnpIdPtr != nullptr) {
-        spdlog::info("device.bus_path property found, use it as a PnP ID");
-        pnpId = pnpIdPtr;
-    }
-    else
-    {
-        spdlog::info("device.bus_path property not found, use the name as a PnP ID");
-        pnpId = info.name;
-    }
-
-    if (event == SoundDeviceEventType::Confirmed || event == SoundDeviceEventType::Discovered) {
-
-        AddOrUpdateAndNotify(event, pnpId, deviceName, volume, deviceFlowType, index);
-    }
-    else if (event != SoundDeviceEventType::Detached) {
-
-        //        NotifyObservers(event, pnpId);
-
-    }
-}
-
-void PulseDeviceCollection::DeliverSourceDeviceAndState(SoundDeviceEventType event, const pa_source_info& info)
-{
-    constexpr auto deviceFlowType = SoundDeviceFlowType::Capture;
-
-    const std::string deviceName = info.description;
-    const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
-    const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
-
-    const uint32_t index = info.index;
-    std::string pnpId;
-    // ReSharper disable once CppTooWideScopeInitStatement
-    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "device.bus_path");
-    if (pnpIdPtr != nullptr) {
-        spdlog::info("device.bus_path property found, use it as a PnP ID");
-        pnpId = pnpIdPtr;
-    }
-    else
-    {
-        spdlog::info("device.bus_path property not found, use the name as a PnP ID");
-        pnpId = info.name;
-    }
-
-    if (event == SoundDeviceEventType::Confirmed || event == SoundDeviceEventType::Discovered) {
-
-        AddOrUpdateAndNotify(event, pnpId, deviceName, volume, deviceFlowType, index);
-    }
-    else if (event != SoundDeviceEventType::Detached) {
-
-        //        NotifyObservers(event, pnpId);
-
-    }
-}
 
