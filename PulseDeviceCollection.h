@@ -66,6 +66,8 @@ private:
         InfoCallback<pa_source_info>(context, info, eol, userdata, SoundDeviceEventType::Discovered);
     }
 
+    [[nodiscard]] PulseDevice MergeDeviceWithExistingOneBasedOnPnpIdAndFlow(const PulseDevice& device) const;
+
 private:
     pa_glib_mainloop* mainLoop_;
     pa_context* context_;

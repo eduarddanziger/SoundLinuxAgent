@@ -1,6 +1,7 @@
 #include "PulseDeviceCollection.h"
 
 #include "ScopeLogger.h"
+#include "StringUtils.h"
 
 #include <pulse/subscribe.h>
 #include <pulse/glib-mainloop.h>
@@ -278,6 +279,49 @@ void PulseDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
     pa_operation_unref(op);
 }
 
+PulseDevice PulseDeviceCollection::MergeDeviceWithExistingOneBasedOnPnpIdAndFlow(const PulseDevice & device) const
+{
+    if
+        (
+            const auto foundPair = pnpToDeviceMap_.find(device.GetPnpId())
+            ; foundPair != pnpToDeviceMap_.end()
+         )
+    {
+        auto volume = device.GetCurrentRenderVolume();
+        auto flow = device.GetFlow();
+        uint16_t renderVolume = device.GetCurrentRenderVolume();
+        uint16_t captureVolume = device.GetCurrentCaptureVolume();
+
+		auto deviceName = device.GetName();
+        if (const auto& foundDev = foundPair->second;
+            foundDev.GetFlow() != device.GetFlow())
+        {
+
+            switch (flow)
+            {
+            case SoundDeviceFlowType::Capture:
+                renderVolume = foundDev.GetCurrentRenderVolume();
+                break;
+            case SoundDeviceFlowType::Render:
+                captureVolume = foundDev.GetCurrentCaptureVolume();
+            default:
+                break;
+            }
+
+            flow = SoundDeviceFlowType::RenderAndCapture;
+
+            auto foundDevNameAsSet = ed::Split(foundDev.GetName(), '%');
+            foundDevNameAsSet.insert(device.GetName());
+            deviceName = ed::Merge(foundDevNameAsSet, '%');
+        }
+
+        return {
+            device.GetPnpId(), deviceName, flow, renderVolume, captureVolume
+        };
+    }
+    return device;
+}
+
 void PulseDeviceCollection::AddOrUpdateAndNotify(SoundDeviceEventType event, const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index)
 {
     // Add or update the sink in the device collection
@@ -285,7 +329,7 @@ void PulseDeviceCollection::AddOrUpdateAndNotify(SoundDeviceEventType event, con
         ,type == SoundDeviceFlowType::Render ? volume : 0
         ,type == SoundDeviceFlowType::Capture ? volume : 0);
 
-    pnpToDeviceMap_[pnpId] = device;
+    pnpToDeviceMap_[pnpId] = MergeDeviceWithExistingOneBasedOnPnpIdAndFlow(device);
 
     NotifyObservers(event, pnpId);
 }
