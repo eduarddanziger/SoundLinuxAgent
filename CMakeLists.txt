@@ -11,35 +11,36 @@ endif()
 
 project("SoundLinuxAgent")
 
+# Add source to this project's executable.
+add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp" "PulseDeviceCollection.cpp" "SoundAgent.cpp" "PulseDevice.cpp")
+
 # Enforce out-of-source builds
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "In-source builds are not allowed. Please create a separate build directory.")
 endif()
 
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 set(CMAKE_BUILD_TYPE Debug)
 
-# Use vcpkg for dependency management
-find_package(spdlog CONFIG REQUIRED)
-find_package(PulseAudio CONFIG REQUIRED)
+find_package(spdlog REQUIRED)
+
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIB REQUIRED glib-2.0)
-pkg_check_modules(PULSE_MAINLOOP_GLIB REQUIRED libpulse-mainloop-glib)
+pkg_check_modules(LIBPULSE REQUIRED libpulse)
+pkg_check_modules(LIBPULSE_MAINLOOP_GLIB REQUIRED libpulse-mainloop-glib)
 
-
-add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp" "PulseDeviceCollection.cpp" "SoundAgent.cpp" "PulseDevice.cpp")
-
-target_link_libraries(SoundLinuxAgent PRIVATE
-    spdlog::spdlog
-    pulse
-    ${GLIB_LIBRARIES}
-    ${PULSE_MAINLOOP_GLIB_LIBRARIES}
-)
-
+# Include directories
 target_include_directories(SoundLinuxAgent PRIVATE
     ${CMAKE_BINARY_DIR}
-    ${GLIB_INCLUDE_DIRS}
-)
+    ${LIBPULSE_INCLUDE_DIRS}
+    ${LIBPULSE_MAINLOOP_GLIB_INCLUDE_DIRS}
+    )
 
+# Link libraries
+target_link_libraries(SoundLinuxAgent PRIVATE
+spdlog::spdlog
+${LIBPULSE_LIBRARIES}
+${LIBPULSE_MAINLOOP_GLIB_LIBRARIES})
 
 # Set C++ standard
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -76,6 +77,9 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
 # Specify the description
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is a test application for audio processing.")
+
+# Specify the dependencies (for DEB packages)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
 
 # Specify the installation paths
 install(TARGETS SoundLinuxAgent DESTINATION bin)
