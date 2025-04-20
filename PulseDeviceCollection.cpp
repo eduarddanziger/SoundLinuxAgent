@@ -152,7 +152,7 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
     if (facility == PA_SUBSCRIPTION_EVENT_SINK) {
         if (operation == PA_SUBSCRIPTION_EVENT_NEW)
         {
-            spdlog::info("SINK index {}: Adding or updating...", idx);
+            spdlog::info("SINK index {}: Discovered...", idx);
             pa_operation* op = pa_context_get_sink_info_by_index(c, idx, NewInfoSinkCallback, self);
             pa_operation_unref(op);
         }
@@ -181,8 +181,8 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
     else if (facility == PA_SUBSCRIPTION_EVENT_SOURCE) {
         if (operation == PA_SUBSCRIPTION_EVENT_NEW)
         {
-            spdlog::info("SINK index {}: Adding or updating...", idx);
-            pa_operation* op = pa_context_get_sink_info_by_index(c, idx, NewInfoSinkCallback, self);
+            spdlog::info("SOURCE index {}:  Discovered...", idx);
+            pa_operation* op = pa_context_get_source_info_by_index(c, idx, NewInfoSourceCallback, self);
             pa_operation_unref(op);
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_REMOVE) {
