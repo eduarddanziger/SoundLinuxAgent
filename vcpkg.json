@@ -1,0 +1,10 @@
+{
+  "name": "soundlinuxagent",
+  "version": "1.0.0",
+  "description": "SoundLinuxAgent is a test application for audio processing.",
+  "dependencies": [
+    "spdlog",
+    "pulseaudio",
+    "glib"
+  ]
+}

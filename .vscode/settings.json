@@ -1,4 +1,7 @@
 {
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "${env:HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    },
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
         "array": "cpp",

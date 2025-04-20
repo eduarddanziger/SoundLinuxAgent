@@ -268,3 +268,6 @@ setups/
 test/XFSXMLSharedUnitTest/*.dll
 *.recipe
 *.vcxproj.FileListAbsolute.txt
+
+vcpkg/
+vcpkg_installed/

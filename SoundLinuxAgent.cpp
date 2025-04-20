@@ -10,30 +10,20 @@
 #include <filesystem>
 #include <glib.h>
 #include <thread>
+#include "magic_enum/magic_enum_iostream.hpp"
+
 
 using namespace std::literals;
 
-class ConsoleSubscriber final : public IDeviceSubscriber {
+class ConsoleSubscriber final : public SoundDeviceObserverInterface
+{
     public:
-        void OnDeviceEvent(const DeviceEvent& event) override {
-            // ReSharper disable once CppUseAuto
-            auto eventTypeAsString = ""s;
-            switch(event.type) {
-                case DeviceEventType::Added: eventTypeAsString = "Added"; break;
-                case DeviceEventType::Removed: eventTypeAsString = "Removed"; break;
-                case DeviceEventType::VolumeChanged: eventTypeAsString = "VolumeChanged"; break;
-            }
-            auto deviceTypeAsString = ""s;
-            switch(event.device.GetFlow()) {
-                case SoundDeviceFlowType::Capture: deviceTypeAsString = "Capture"; break;
-                case SoundDeviceFlowType::Render: deviceTypeAsString = "Render"; break;
-            default: ;
-                deviceTypeAsString = "Undefined";
-            }
-            std::cout << "Got Event (" << eventTypeAsString << "): " << "\nid: " <<
-                event.device.GetPnpId() << "\n""type: " << deviceTypeAsString <<
-                "\n""name: " << event.device.GetName() << "\n""render volume: " << event.device.GetCurrentRenderVolume() <<
-                "\n""capture volume: " << event.device.GetCurrentCaptureVolume() << ".\n";
+        void OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId) override
+        {
+            using magic_enum::iostream_operators::operator<<; // out-of-the-box stream operators for enums
+
+            std::cout << '\n' << "Event caught: " << event << "."
+                << " Device PnP id: " << devicePnpId << '\n';
         }
 };
 
@@ -58,20 +48,17 @@ int main(int argc, char *argv[])
 
         PulseDeviceCollection collection;
 
-        const auto subscriber = std::make_shared<ConsoleSubscriber>();
-        collection.Subscribe(subscriber);
+		ConsoleSubscriber subscriber;
 
-        collection.Activate();
-        auto* loop = collection.GetMainLoop();
+        collection.Subscribe(subscriber);
 
         // Start the key input thread
         std::thread inputThread([&]() {
             keyInputThread(
-                [&collection, loop](char input) {  // Quit callback (executes when 'q' is pressed)
+                [&collection](char input) {  // Quit callback (executes when 'q' is pressed)
                     if (input == 'q' || input == 'Q') {
                         std::cout << "Quitting...\n";
-                        collection.Deactivate();
-                        g_main_loop_quit(loop);
+                        collection.DeactivateAndStopLoop();
                         return true;
                     }
                     return false;
@@ -83,8 +70,8 @@ int main(int argc, char *argv[])
             );
         });
 
-        // Run the main loop
-        g_main_loop_run(loop);
+        // Activate and run the main loop
+        collection.ActivateAndStartLoop();
 
         if (inputThread.joinable()) {
             inputThread.join();
