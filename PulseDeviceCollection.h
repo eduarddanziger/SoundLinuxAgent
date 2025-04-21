@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <memory>
 #include <functional>
@@ -34,7 +35,9 @@ private:
     void StartMonitoring();
     void StopMonitoring();
 
-    void AddOrUpdateAndNotify(SoundDeviceEventType event, const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index);
+    void AddOrUpdateAndNotify(SoundDeviceEventType event, const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type);
+    void CheckIfVolumeChangedAndNotify(const std::string& pnpId, uint16_t volume, SoundDeviceFlowType type);
+
     void NotifyObservers(SoundDeviceEventType action, const std::string& devicePNpId) const;
 
     static void ContextStateCallback(pa_context* c, void* userdata);
@@ -47,24 +50,48 @@ private:
         SoundDeviceEventType event);
 
     template<typename INFO_T_>
-    void DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info);
+    static void ChangedInfoCallback(pa_context* context, const INFO_T_* info, int eol, void* userdata);
+    
+
+    template<typename INFO_T_>
+        void DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info);
+
+    template<typename INFO_T_>
+        void DeliverChangedState(const INFO_T_& info);
+
 
     // Wrapper functions to maintain the original callback signatures
-    static void InitialInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
-        InfoCallback<pa_sink_info>(context, info, eol, userdata, SoundDeviceEventType::Confirmed);
+    static void InitialInfoSinkCallback(pa_context* context, const pa_sink_info* sinkInfo, int eol, void* userdata)
+    {
+        InfoCallback(context, sinkInfo, eol, userdata, SoundDeviceEventType::Confirmed);
     }
 
-    static void NewInfoSinkCallback(pa_context* context, const pa_sink_info* info, int eol, void* userdata) {
-        InfoCallback<pa_sink_info>(context, info, eol, userdata, SoundDeviceEventType::Discovered);
+    static void NewInfoSinkCallback(pa_context* context, const pa_sink_info* sinkInfo, int eol, void* userdata)
+    {
+        InfoCallback(context, sinkInfo, eol, userdata, SoundDeviceEventType::Discovered);
     }
 
-    static void InitialInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
-        InfoCallback<pa_source_info>(context, info, eol, userdata, SoundDeviceEventType::Confirmed);
+    static void ChangedInfoSinkCallback(pa_context* context, const pa_sink_info* sinkInfo, int eol, void* userdata)
+    {
+        ChangedInfoCallback(context, sinkInfo, eol, userdata);
     }
 
-    static void NewInfoSourceCallback(pa_context* context, const pa_source_info* info, int eol, void* userdata) {
-        InfoCallback<pa_source_info>(context, info, eol, userdata, SoundDeviceEventType::Discovered);
+    static void InitialInfoSourceCallback(pa_context* context, const pa_source_info* sourceInfo, int eol, void* userdata)
+    {
+        InfoCallback(context, sourceInfo, eol, userdata, SoundDeviceEventType::Confirmed);
     }
+
+    static void NewInfoSourceCallback(pa_context* context, const pa_source_info* sourceInfo, int eol, void* userdata)
+    {
+        InfoCallback(context, sourceInfo, eol, userdata, SoundDeviceEventType::Discovered);
+    }
+
+    static void ChangedInfoSourceCallback(pa_context* context, const pa_source_info* sourceInfo, int eol, void* userdata)
+    {
+        ChangedInfoCallback(context, sourceInfo, eol, userdata);
+    }
+
+    
 
     [[nodiscard]] PulseDevice MergeDeviceWithExistingOneBasedOnPnpIdAndFlow(const PulseDevice& device) const;
 

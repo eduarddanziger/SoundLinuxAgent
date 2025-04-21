@@ -143,27 +143,72 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
     const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
 
-    const uint32_t index = info.index;
     std::string pnpId;
 
     // ReSharper disable once CppTooWideScopeInitStatement
     const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
     if (pnpIdPtr != nullptr) {
-        spdlog::info("node.name property found, use it as a PnP ID");
+        spdlog::info("Index {}: node.name property found, use it as a PnP ID\n", info.index);
         pnpId = pnpIdPtr;
     }
     else {
-        spdlog::info("node.name property not found, use the name as a PnP ID");
+        spdlog::info("Index {}: node.name property not found, use the name as a PnP ID\n", info.index);
         pnpId = info.name;
     }
 
     if (event == SoundDeviceEventType::Confirmed || event == SoundDeviceEventType::Discovered) {
-        AddOrUpdateAndNotify(event, pnpId, deviceName, volume, deviceFlowType, index);
+        AddOrUpdateAndNotify(event, pnpId, deviceName, volume, deviceFlowType);
     }
     else if (event != SoundDeviceEventType::Detached) {
         // NotifyObservers(event, pnpId);
     }
 }
+
+template<typename InfoType>
+void PulseDeviceCollection::ChangedInfoCallback(pa_context* context, const InfoType* info, int eol, void* userdata)
+{
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
+
+    if (eol) {
+        return;
+    }
+
+    if (!info) {
+        std::cerr << "Failed to get pulse audio device info." << std::endl;
+        return;
+    }
+
+    self->DeliverChangedState(*info);
+}
+
+template<typename INFO_T_>
+void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
+    constexpr auto deviceFlowType = std::is_same_v<INFO_T_, pa_sink_info> ? SoundDeviceFlowType::Render :
+        (std::is_same_v<INFO_T_, pa_source_info> ? SoundDeviceFlowType::Capture : SoundDeviceFlowType::None);
+    constexpr auto isCapture = std::is_same_v<INFO_T_, pa_source_info>;
+    static_assert(deviceFlowType != SoundDeviceFlowType::None,
+        "DeliverChangedState can only be used with pa_sink_info or pa_source_info types");
+
+    const std::string deviceName = info.description;
+    const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
+    const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
+
+    std::string pnpId;
+
+    // ReSharper disable once CppTooWideScopeInitStatement
+    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
+    if (pnpIdPtr != nullptr) {
+        spdlog::info("Index {}: node.name property found, use it as a PnP ID\n", info.index);
+        pnpId = pnpIdPtr;
+    }
+    else {
+        spdlog::info("Index {}: node.name property not found, use the name as a PnP ID\n", info.index);
+        pnpId = info.name;
+    }
+
+    CheckIfVolumeChangedAndNotify(pnpId, volume, deviceFlowType);
+}
+
 
 
 
@@ -228,9 +273,9 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE)
         {
-            spdlog::info("SINC index {}: Volume changed...", idx);
-            // pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
-            // pa_operation_unref(op);
+            spdlog::info("SINC index {}: Changed...", idx);
+            pa_operation* op = pa_context_get_sink_info_by_index(c, idx, ChangedInfoSinkCallback, self);
+            pa_operation_unref(op);
         }
     }
     else if (facility == PA_SUBSCRIPTION_EVENT_SOURCE) {
@@ -244,9 +289,9 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
             spdlog::info("SOURCE index {}: Removing...", idx);
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE) {
-            spdlog::info("SOURCE index {}: Volume changed...", idx);
-            // pa_operation* op = pa_context_get_source_info_by_index(c, idx, SourceInfoCallback, self);
-            // pa_operation_unref(op);
+            spdlog::info("SOURCE index {}: Changed...", idx);
+            pa_operation* op = pa_context_get_source_info_by_index(c, idx, ChangedInfoSourceCallback, self);
+            pa_operation_unref(op);
         }
     }
 }
@@ -322,16 +367,40 @@ PulseDevice PulseDeviceCollection::MergeDeviceWithExistingOneBasedOnPnpIdAndFlow
     return device;
 }
 
-void PulseDeviceCollection::AddOrUpdateAndNotify(SoundDeviceEventType event, const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type, uint32_t index)
+void PulseDeviceCollection::AddOrUpdateAndNotify(SoundDeviceEventType event, const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type)
 {
     // Add or update the sink in the device collection
     const PulseDevice device(pnpId, name, type
         ,type == SoundDeviceFlowType::Render ? volume : 0
         ,type == SoundDeviceFlowType::Capture ? volume : 0);
-
+    
     pnpToDeviceMap_[pnpId] = MergeDeviceWithExistingOneBasedOnPnpIdAndFlow(device);
 
     NotifyObservers(event, pnpId);
+}
+
+void PulseDeviceCollection::CheckIfVolumeChangedAndNotify(const std::string& pnpId, uint16_t volume, SoundDeviceFlowType type)
+{
+    if (pnpToDeviceMap_.contains(pnpId))
+    {
+        auto existingDevice = pnpToDeviceMap_[pnpId];
+        if (auto prevVolume = existingDevice.GetCurrentRenderVolume();
+             type == SoundDeviceFlowType::Render && prevVolume != volume)
+        {
+            existingDevice.SetCurrentRenderVolume(volume);
+            pnpToDeviceMap_[pnpId] = existingDevice;
+
+            NotifyObservers(SoundDeviceEventType::VolumeRenderChanged, pnpId);
+        }
+        else if (auto prevVolume = existingDevice.GetCurrentCaptureVolume();
+            type == SoundDeviceFlowType::Capture && prevVolume != volume)
+        {
+            existingDevice.SetCurrentCaptureVolume(volume);
+            pnpToDeviceMap_[pnpId] = existingDevice;
+
+            NotifyObservers(SoundDeviceEventType::VolumeCaptureChanged, pnpId);
+        }
+    }
 }
 
 void PulseDeviceCollection::NotifyObservers(SoundDeviceEventType action, const std::string & devicePNpId) const

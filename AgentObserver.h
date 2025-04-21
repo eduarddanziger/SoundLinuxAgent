@@ -13,11 +13,11 @@ public:
     explicit AgentObserver(SoundDeviceCollectionInterface& collection)
         :collection_(collection)
     {
-        
     }
+    
     void OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId) override
     {
-        spdlog::info("Event \"{}\" caught, device PnP ID: {}.\n", magic_enum::enum_name(event), devicePnpId);
+        spdlog::info("Event \"{}\" caught, device PnP ID: {}.", magic_enum::enum_name(event), devicePnpId);
 		if (event != SoundDeviceEventType::Detached)
 		{
 			const auto device = collection_.CreateItem(devicePnpId);
