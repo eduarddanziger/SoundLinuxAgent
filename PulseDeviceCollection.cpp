@@ -147,13 +147,13 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     std::string pnpId;
 
     // ReSharper disable once CppTooWideScopeInitStatement
-    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "device.bus_path");
+    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
     if (pnpIdPtr != nullptr) {
-        spdlog::info("device.bus_path property found, use it as a PnP ID");
+        spdlog::info("node.name property found, use it as a PnP ID");
         pnpId = pnpIdPtr;
     }
     else {
-        spdlog::info("device.bus_path property not found, use the name as a PnP ID");
+        spdlog::info("node.name property not found, use the name as a PnP ID");
         pnpId = info.name;
     }
 
