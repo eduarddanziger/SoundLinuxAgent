@@ -310,9 +310,9 @@ PulseDevice PulseDeviceCollection::MergeDeviceWithExistingOneBasedOnPnpIdAndFlow
 
             flow = SoundDeviceFlowType::RenderAndCapture;
 
-            auto foundDevNameAsSet = ed::Split(foundDev.GetName(), '%');
+            auto foundDevNameAsSet = ed::Split(foundDev.GetName(), '|');
             foundDevNameAsSet.insert(device.GetName());
-            deviceName = ed::Merge(foundDevNameAsSet, '%');
+            deviceName = ed::Merge(foundDevNameAsSet, '|');
         }
 
         return {
