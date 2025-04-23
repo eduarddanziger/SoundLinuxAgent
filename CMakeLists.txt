@@ -20,21 +20,17 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
 
-# Add the pulseaudio library subdirectory
-add_subdirectory(pulseaudio_lib)
+add_subdirectory(SoundLib)
 
-# Add source to this project's executable.
 add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp")
 
-# Include directories - note libpulse is no longer needed here
 target_include_directories(SoundLinuxAgent PRIVATE
     ${CMAKE_BINARY_DIR}
 )
 
-# Link libraries - just link to pulseaudio_lib, which handles its own dependencies
 target_link_libraries(SoundLinuxAgent PRIVATE
     spdlog::spdlog
-    pulseaudio_lib
+    SoundLib
 )
 
 # Set C++ standard
@@ -78,7 +74,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
 
 # Specify the installation paths
-install(TARGETS SoundLinuxAgent pulseaudio_lib DESTINATION bin)
+install(TARGETS SoundLinuxAgent SoundLib DESTINATION bin)
 
 # Include CPack to enable packaging
 include(CPack)
