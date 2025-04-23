@@ -11,36 +11,27 @@ endif()
 
 project("SoundLinuxAgent")
 
-# Add source to this project's executable.
-add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp" "PulseDeviceCollection.cpp" "SoundAgent.cpp" "PulseDevice.cpp")
-
 # Enforce out-of-source builds
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "In-source builds are not allowed. Please create a separate build directory.")
 endif()
 
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
 set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBPULSE REQUIRED libpulse)
-pkg_check_modules(LIBPULSE_MAINLOOP_GLIB REQUIRED libpulse-mainloop-glib)
+add_subdirectory(SoundLib)
 
-# Include directories
+add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp")
+
 target_include_directories(SoundLinuxAgent PRIVATE
     ${CMAKE_BINARY_DIR}
-    ${LIBPULSE_INCLUDE_DIRS}
-    ${LIBPULSE_MAINLOOP_GLIB_INCLUDE_DIRS}
-    )
+)
 
-# Link libraries
 target_link_libraries(SoundLinuxAgent PRIVATE
-spdlog::spdlog
-${LIBPULSE_LIBRARIES}
-${LIBPULSE_MAINLOOP_GLIB_LIBRARIES})
+    spdlog::spdlog
+    SoundLib
+)
 
 # Set C++ standard
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -76,13 +67,14 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
 # Specify the description
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is a test application for audio processing.")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
 
 # Specify the dependencies (for DEB packages)
+# Note: libpulse dependencies can be handled in the library's CPack config if needed
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
 
 # Specify the installation paths
-install(TARGETS SoundLinuxAgent DESTINATION bin)
+install(TARGETS SoundLinuxAgent SoundLib DESTINATION bin)
 
 # Include CPack to enable packaging
 include(CPack)

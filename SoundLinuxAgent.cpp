@@ -1,31 +1,13 @@
 ﻿#include "SpdLogSetup.h"
 #include "cpversion.h"
-#include "PulseDeviceCollection.h"
+
+#include "AgentObserver.h"
+
 #include "KeyInputThread.h"
 
-#include <pulse/pulseaudio.h>
-
-#include <iostream>
 #include <memory>
-#include <filesystem>
-#include <glib.h>
 #include <thread>
-#include "magic_enum/magic_enum_iostream.hpp"
 
-
-using namespace std::literals;
-
-class ConsoleSubscriber final : public SoundDeviceObserverInterface
-{
-    public:
-        void OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId) override
-        {
-            using magic_enum::iostream_operators::operator<<; // out-of-the-box stream operators for enums
-
-            std::cout << '\n' << "Event caught: " << event << "."
-                << " Device PnP id: " << devicePnpId << '\n';
-        }
-};
 
 int main(int argc, char *argv[])
 {
@@ -34,7 +16,7 @@ int main(int argc, char *argv[])
     {
         if (std::string(argv[i]) == "--version" || std::string(argv[i]) == "-v")
         {
-            std::cout << "AudioTest version " << VERSION << std::endl;
+            std::cout << "AudioTest version " << VERSION << "\n";
             return 0;
         }
     }
@@ -46,9 +28,14 @@ int main(int argc, char *argv[])
         
         spdlog::info("Version {}, starting...", VERSION);
 
-        PulseDeviceCollection collection;
+		const auto collSmartPtr = SoundAgent::CreateDeviceCollection();
+        if (collSmartPtr == nullptr)
+        {
+			throw std::runtime_error("Failed to create device collection");
+        }
+		auto& collection = *collSmartPtr;
 
-		ConsoleSubscriber subscriber;
+        AgentObserver subscriber(collection);
 
         collection.Subscribe(subscriber);
 
