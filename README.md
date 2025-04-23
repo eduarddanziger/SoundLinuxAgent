@@ -1,8 +1,8 @@
 # SoundLinuxAgent
 
-#### Sound Agent Agent detects and visualizes audio endpoint devices under Linux using PulseAudio (C++). It handles audio notifications and device changes.
+**Sound Agent Agent detects and visualizes audio endpoint devices under Linux using PulseAudio (C++). It handles audio notifications and device changes.**
 
-#### The Sound Agent Service collects audio device information and sends it to a remote server.
+**The Sound Agent Service collects audio device information and sends it to a remote server.**
 
 ## Requirements
 
@@ -13,8 +13,8 @@
 
 ## Building
 
-1. **Clone the repository**
-2. **Create a build directory and navigate into it, run CMake and compile the project:**
+1. Clone the repository
+2. Create a build directory and navigate into it, run CMake and compile the project:
 
    ```bash
    mkdir -p build
@@ -25,28 +25,28 @@
 
 ## Installation
 
-#### To install SoundLinuxAgent using the generated DEB package:
+In order to install SoundLinuxAgent using the generated DEB package:
 
-1. **Install a DEB-package from latest GitHub-Release:**
+1. Install a DEB-package from latest GitHub-Release:
 
    ```bash
    sudo dpkg -i SoundLinuxAgent-x.x.x.deb
    ```
-2. **If there are missing dependencies, fix them by running:**
+2. If there are missing dependencies, fix them by running:
 
    ```bash
    sudo apt-get install -f
    ```
 
-#### Alternatively, you can install directly from the build directory
+Alternatively, you can install directly from the build directory
 
 ## License
 
-#### This project is licensed under the terms of the [MIT License](LICENSE).
+This project is licensed under the terms of the [MIT License](LICENSE).
 
 ## Contact
 
-- **Eduard Danziger**
+Eduard Danziger
 
-- **Email: [edanziger@gmx.de](mailto:edanziger@gmx.de)**
+Email: [edanziger@gmx.de](mailto:edanziger@gmx.de)
 
