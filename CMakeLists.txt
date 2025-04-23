@@ -55,7 +55,7 @@ else()
   set(CPACK_PACKAGE_VERSION ${CPACK_PKG_VERSION})
 endif()
 
-# Configure cpversion.h from cpversion.h.in
+# Configure cpversion.h from cpversion.h.in, whereby @CPACK_PACKAGE_VERSION@ will be replaced. 
 configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
 
 # Set the package contact information
