@@ -1,6 +1,6 @@
 #include "PulseDeviceCollection.h"
 
-#include "ScopeLogger.h"
+#include "../ScopeLogger.h"
 #include "StringUtils.h"
 
 #include <pulse/subscribe.h>

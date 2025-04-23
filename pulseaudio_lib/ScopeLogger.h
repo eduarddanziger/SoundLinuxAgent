@@ -3,15 +3,23 @@
 #include <spdlog/spdlog.h>
 #include <string_view>
 
+#include "ClassDefHelper.h"
+
+
 
 // RAII-style class that logs entry and exit automatically
-class ScopeLogger {
+class ScopeLogger
+{
 public:
-    ScopeLogger(const std::string_view& function) : function_(function) {
+    DISALLOW_COPY_MOVE(ScopeLogger);
+
+    explicit ScopeLogger(const std::string_view& function) : function_(function)
+    {
         spdlog::debug("ENTER: {}", function_);
     }
     
-    ~ScopeLogger() {
+    ~ScopeLogger()
+    {
         spdlog::debug("EXIT: {}", function_);
     }
     
