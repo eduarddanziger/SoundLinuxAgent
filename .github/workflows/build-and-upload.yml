@@ -70,15 +70,16 @@ jobs:
     - name: Package with CPack
       run: |
         cmake --build build
-        echo 1
-        pwd
-        echo 2
-        ls -l .
 
     - name: Verify DEB package
       run: |
-        ls -l build/
-        dpkg -c 'build/*.deb'
+        # dpkg -c build/*.deb doesn't work, no idea why.. bash error?
+        for deb_file in build/*.deb; do 
+          if [ -f "$deb_file" ]; then
+            echo "Inspecting package: $deb_file"
+            dpkg -c "$deb_file"
+          fi
+        done
         
     - name: Upload DEB package to GitHub Packages
       uses: actions/upload-artifact@v4
