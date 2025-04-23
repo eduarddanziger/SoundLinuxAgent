@@ -19,26 +19,45 @@ endif()
 set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
+find_package(Poco REQUIRED Foundation Util Net)
 
 add_subdirectory(SoundLib)
 
-add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp")
+# Configure cpversion.h from cpversion.h.in
+configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
 
-target_include_directories(SoundLinuxAgent PRIVATE
-    ${CMAKE_BINARY_DIR}
-)
+add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
+set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
 
-target_link_libraries(SoundLinuxAgent PRIVATE
+target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
+
+target_link_libraries(SoundLinuxCli PRIVATE
     spdlog::spdlog
     SoundLib
 )
 
-# Set C++ standard
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET SoundLinuxAgent PROPERTY CXX_STANDARD 20)
-endif()
+add_executable(SoundLinuxDaemon "SoundLinuxDaemon.cpp")
+set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 
-# Set the package name and version
+target_include_directories(SoundLinuxDaemon PRIVATE 
+    ${CMAKE_BINARY_DIR}
+    ${Poco_INCLUDE_DIRS}
+)
+
+# Link libraries to SoundLinuxDaemon
+target_link_libraries(SoundLinuxDaemon PRIVATE
+    spdlog::spdlog
+    SoundLib
+    Poco::Foundation
+    Poco::Util
+    Poco::Net
+)
+
+install(TARGETS SoundLinuxCli DESTINATION bin COMPONENT SoundLinuxCli)
+install(TARGETS SoundLinuxDaemon DESTINATION bin COMPONENT SoundLinuxDaemon)
+
+
+# The package name and version
 set(CPACK_PACKAGE_NAME "SoundLinuxAgent")
 if(NOT DEFINED CPACK_PKG_VERSION)
   set(CPACK_PACKAGE_VERSION "1.0.0" CACHE STRING "Package version" FORCE)
@@ -46,41 +65,29 @@ else()
   set(CPACK_PACKAGE_VERSION ${CPACK_PKG_VERSION})
 endif()
 
-# Configure cpversion.h from cpversion.h.in
-configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
-
-# Set the package contact information
 set(CPACK_PACKAGE_CONTACT "Eduard Danziger <edanziger@gmx.de>")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
 
-# Specify the package type (e.g., DEB)
+set(CPACK_COMPONENTS_ALL SoundLinuxCli SoundLinuxDaemon)
+
 if(UNIX AND NOT APPLE)
   set(CPACK_GENERATOR "DEB")
+  set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
+  set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
+  set(CPACK_DEBIAN_SOUNDLINUXDAEMON_PACKAGE_NAME "SoundLinuxDaemon")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
 endif()
 
 # Specify the installation directory
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "SoundLinuxAgent")
 
-# Specify the license file
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
-
-# Specify the readme file
-set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
-
-# Specify the description
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
-
-# Specify the dependencies (for DEB packages)
-# Note: libpulse dependencies can be handled in the library's CPack config if needed
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
-
-# Specify the installation paths
-install(TARGETS SoundLinuxAgent SoundLib DESTINATION bin)
-
-# Include CPack to enable packaging
+# Include CPack last
 include(CPack)
 
 add_custom_command(
-    TARGET SoundLinuxAgent POST_BUILD
+    TARGET SoundLinuxCli SoundLinuxDaemon POST_BUILD
     COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
     COMMENT "Generating DEB package"
 )
