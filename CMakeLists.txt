@@ -20,37 +20,27 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBPULSE REQUIRED libpulse)
-pkg_check_modules(LIBPULSE_MAINLOOP_GLIB REQUIRED libpulse-mainloop-glib)
-
-# Set C++ standard at project level
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set(CMAKE_CXX_STANDARD 20)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
-
 # Add the pulseaudio library subdirectory
 add_subdirectory(pulseaudio_lib)
 
 # Add source to this project's executable.
 add_executable(SoundLinuxAgent "SoundLinuxAgent.cpp")
 
-# Include directories for the executable
+# Include directories - note libpulse is no longer needed here
 target_include_directories(SoundLinuxAgent PRIVATE
     ${CMAKE_BINARY_DIR}
-    ${LIBPULSE_INCLUDE_DIRS}
-    ${LIBPULSE_MAINLOOP_GLIB_INCLUDE_DIRS}
-    pulseaudio_lib # Include the library headers
 )
 
-# Link libraries for the executable
+# Link libraries - just link to pulseaudio_lib, which handles its own dependencies
 target_link_libraries(SoundLinuxAgent PRIVATE
-    pulseaudio_lib # Link with our new library
     spdlog::spdlog
-    ${LIBPULSE_LIBRARIES}
-    ${LIBPULSE_MAINLOOP_GLIB_LIBRARIES}
+    pulseaudio_lib
 )
+
+# Set C++ standard
+if (CMAKE_VERSION VERSION_GREATER 3.12)
+  set_property(TARGET SoundLinuxAgent PROPERTY CXX_STANDARD 20)
+endif()
 
 # Set the package name and version
 set(CPACK_PACKAGE_NAME "SoundLinuxAgent")
@@ -60,7 +50,7 @@ else()
   set(CPACK_PACKAGE_VERSION ${CPACK_PKG_VERSION})
 endif()
 
-# Configure cpversion.h from cpversion.h.in, whereby @CPACK_PACKAGE_VERSION@ will be replaced. 
+# Configure cpversion.h from cpversion.h.in
 configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
 
 # Set the package contact information
@@ -81,9 +71,10 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
 # Specify the description
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is a test application for audio processing.")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
 
 # Specify the dependencies (for DEB packages)
+# Note: libpulse dependencies can be handled in the library's CPack config if needed
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
 
 # Specify the installation paths
