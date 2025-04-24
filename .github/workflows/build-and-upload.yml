@@ -72,12 +72,8 @@ jobs:
 
     - name: Verify DEB package
       run: |
-        if ls build/*.deb 1> /dev/null 2>&1; then
-          dpkg -c build/*.deb
-        else
-          echo "No .deb package found in the build directory."
-          exit 1
-        fi
+        dpkg -c "build/*.deb"
+        
     - name: Upload DEB package to GitHub Packages
       uses: actions/upload-artifact@v4
       with:
