@@ -73,7 +73,12 @@ jobs:
 
     - name: Verify DEB package
       run: |
-        dpkg -c build/SoundLinuxAgent*.deb
+        for deb_file in build/*.deb; do
+          if [ -f "$deb_file" ]; then
+            echo "Inspecting package: $deb_file"
+            dpkg -c "$deb_file"
+          fi
+        done
         
     - name: Upload DEB package to GitHub Packages
       uses: actions/upload-artifact@v4
