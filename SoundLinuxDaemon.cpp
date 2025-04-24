@@ -1,10 +1,14 @@
+#include "SpdLogSetup.h"
+
 #include <Poco/Util/ServerApplication.h>
 #include <Poco/Util/Option.h>
 #include <Poco/Util/OptionSet.h>
 #include <Poco/Util/HelpFormatter.h>
 #include <Poco/Task.h>
 #include <iostream>
-#include <spdlog/spdlog.h>
+#include <csignal>
+#include <atomic>
+
 #include "AgentObserver.h"
 #include "cpversion.h"
 
@@ -14,19 +18,34 @@ using Poco::Util::Option;
 using Poco::Util::OptionSet;
 using Poco::Util::HelpFormatter;
 
-class SoundLinuxDaemon : public ServerApplication
+class SoundLinuxDaemon final : public ServerApplication
 {
 protected:
+    static std::function<void()> s_deactivateCallback;
+    static void signalHandler(int signum) {
+        if (s_deactivateCallback) {
+            s_deactivateCallback();
+        }
+    }
+
+    static void SetupSignalHandlers(
+        SoundDeviceCollectionInterface& collection,
+        std::function<void()> deactivateCallback
+    )
+    {
+        s_deactivateCallback = deactivateCallback;
+        std::signal(SIGTERM, signalHandler);
+        std::signal(SIGINT, signalHandler);
+    }
+
     void initialize(Application& self)
     {
         loadConfiguration();
         ServerApplication::initialize(self);
-        spdlog::info("SoundLinuxDaemon initializing");
     }
 
     void uninitialize()
     {
-        spdlog::info("SoundLinuxDaemon shutting down");
         ServerApplication::uninitialize();
     }
 
@@ -35,13 +54,13 @@ protected:
         ServerApplication::defineOptions(options);
         
         options.addOption(
-            Option("help", "h", "Display help information")
+            Option("help", "h", "Help information")
                 .required(false)
                 .repeatable(false)
                 .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::handleHelp)));
 
         options.addOption(
-            Option("version", "v", "Display version information")
+            Option("version", "v", "Version information")
             .required(false)
             .repeatable(false)
             .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::handleVersion)));
@@ -52,12 +71,12 @@ protected:
     {
         HelpFormatter helpFormatter(options());
         helpFormatter.setCommand(commandName());
-        helpFormatter.setUsage("OPTIONS");
-        helpFormatter.setHeader("Sound Linux Agent Daemon.");
+        helpFormatter.setHeader("Options:");
+        helpFormatter.setUsage("[options]");
+        helpFormatter.setFooter("\n");
         helpFormatter.format(std::cout);
         stopOptionsProcessing();
-        _helpRequested = true;
-    }
+        _helpRequested = true;    }
 
     void handleVersion(const std::string& name, const std::string& value)
     {
@@ -70,21 +89,49 @@ protected:
     {
         if (_helpRequested)
             return Application::EXIT_OK;
+        try
+        {
+            SpdLogSetup("SoundLinuxDaemon.log");
+            spdlog::info("Sound Linux Daemon {} started", VERSION); 
+
+            const auto deviceCollectionSmartPtr = SoundAgent::CreateDeviceCollection();
+            if (deviceCollectionSmartPtr == nullptr)
+            {
+                throw std::runtime_error("Failed to create device collection");
+            }
+            auto& collection = *deviceCollectionSmartPtr;
             
-		spdlog::info("SoundLinuxDaemon {} started", VERSION); 
-            
-        // Initialize your sound library functionality here
-        // SoundLib soundLib;
-        // soundLib.initialize();
-        
-        // The server application will now wait for termination
-        waitForTerminationRequest();
-        
+            AgentObserver subscriber(collection);
+            collection.Subscribe(subscriber);
+
+            std::atomic<SoundDeviceCollectionInterface*> collectionPtrAtomic(&collection);
+            SetupSignalHandlers(collection,
+                [&collectionPtrAtomic]()
+                {
+                    spdlog::info("Termination signal received.\n");
+                    collectionPtrAtomic.load()->DeactivateAndStopLoop();
+                }
+            );
+
+            collection.ActivateAndStartLoop(); // waits here for deactivation
+
+            collection.Unsubscribe(subscriber);
+            spdlog::info("Main loop exited. Shutting down...");
+        }
+        catch (const std::exception & e)
+        {
+            spdlog::error("...Version {}, ended with an exception: {}", VERSION, e.what());
+            return Application::EXIT_SOFTWARE;
+        }
+        spdlog::info("...Version {}, ended successfully...", VERSION);
         return Application::EXIT_OK;
     }
     
 private:
     bool _helpRequested = false;
 };
+
+std::function<void()> SoundLinuxDaemon::s_deactivateCallback{nullptr};
+
 
 POCO_SERVER_MAIN(SoundLinuxDaemon)
