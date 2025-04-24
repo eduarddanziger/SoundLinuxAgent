@@ -73,13 +73,17 @@ jobs:
 
     - name: Verify DEB package
       run: |
-        find build -name "*.deb" | xargs dpkg -c
-        
+        shopt -s nullglob  # Prevents errors if no matches are found
+        for deb_file in build/SoundLinuxAgent*.deb; do
+          echo "Inspecting package: $deb_file"
+          dpkg -c "$deb_file"
+          echo "--------------------------"
+        done        
     - name: Upload DEB package to GitHub Packages
       uses: actions/upload-artifact@v4
       with:
         name: SoundLinuxAgent-deb
-        path: build/**/*.deb
+        path: build/SoundLinuxAgent*.deb
         overwrite: true
 
   publish:
@@ -100,4 +104,4 @@ jobs:
       run: |
         VERS=${{ needs.build.outputs.version }}
         echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-        gh release create "$VERS" build/*.deb --title "SoundLinuxAgent $VERS" --notes "Release of SoundLinuxAgent $VERS"
+        gh release create "$VERS" build/SoundLinuxAgent*.deb --title "SoundLinuxAgent $VERS" --notes "Release of SoundLinuxAgent $VERS"
