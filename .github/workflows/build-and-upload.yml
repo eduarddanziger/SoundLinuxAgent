@@ -73,7 +73,8 @@ jobs:
 
     - name: Verify DEB package
       run: |
-        for deb_file in build/*.deb; do
+        # dpkg -c build/*.deb doesn't work, no idea why.. bash error?
+        for deb_file in build/*.deb; do 
           if [ -f "$deb_file" ]; then
             echo "Inspecting package: $deb_file"
             dpkg -c "$deb_file"
@@ -84,7 +85,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SoundLinuxAgent-deb
-        path: build/SoundLinuxAgent*.deb
+        path: build/*.deb
         overwrite: true
 
   publish:
@@ -105,4 +106,4 @@ jobs:
       run: |
         VERS=${{ needs.build.outputs.version }}
         echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-        gh release create "$VERS" build/SoundLinuxAgent*.deb --title "SoundLinuxAgent $VERS" --notes "Release of SoundLinuxAgent $VERS"
+        gh release create "$VERS" build/*.deb --title "SoundLinuxAgent $VERS" --notes "Release of SoundLinuxAgent $VERS"
