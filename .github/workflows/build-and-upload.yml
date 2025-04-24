@@ -71,13 +71,13 @@ jobs:
       run: |
         cmake --build build
         echo 1
-        ls -l 'build/*.deb'
+        pwd
         echo 2
-        ls -l build/*.deb
+        ls -l .
 
     - name: Verify DEB package
       run: |
-        ls -l 'build/*.deb'
+        ls -l build/
         dpkg -c 'build/*.deb'
         
     - name: Upload DEB package to GitHub Packages
