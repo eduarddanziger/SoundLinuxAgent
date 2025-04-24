@@ -68,10 +68,16 @@ jobs:
       run: cmake -G Ninja -B build -DCPACK_PKG_VERSION=${{ steps.get_version.outputs.VERSION }}
 
     - name: Package with CPack
-      run: cmake --build build
+      run: |
+        cmake --build build
+        echo 1
+        ls -l 'build/*.deb'
+        echo 2
+        ls -l build/*.deb
 
     - name: Verify DEB package
       run: |
+        ls -l 'build/*.deb'
         dpkg -c 'build/*.deb'
         
     - name: Upload DEB package to GitHub Packages
