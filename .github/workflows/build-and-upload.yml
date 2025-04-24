@@ -67,16 +67,17 @@ jobs:
     - name: Configure CMake
       run: cmake -G Ninja -B build -DCPACK_PKG_VERSION=${{ steps.get_version.outputs.VERSION }}
 
-    - name: Build with Ninja
-      run: cmake --build build
-
     - name: Package with CPack
       run: cmake --build build --target package
 
     - name: Verify DEB package
       run: |
-        dpkg -c build/*.deb
-
+        if ls build/*.deb 1> /dev/null 2>&1; then
+          dpkg -c build/*.deb
+        else
+          echo "No .deb package found in the build directory."
+          exit 1
+        fi
     - name: Upload DEB package to GitHub Packages
       uses: actions/upload-artifact@v4
       with:
