@@ -38,21 +38,23 @@ protected:
         std::signal(SIGINT, signalHandler);
     }
 
-    void initialize(Application& self)
+    void initialize(Application& self) override
     {
         loadConfiguration();
         ServerApplication::initialize(self);
     }
 
-    void uninitialize()
-    {
-        ServerApplication::uninitialize();
-    }
-
-    void defineOptions(OptionSet& options)
+    void defineOptions(OptionSet& options) override
     {
         ServerApplication::defineOptions(options);
         
+        options.addOption(
+            Poco::Util::Option("url", "u", "Base Server URL, e.g. http://localhost:5027")
+            .required(false)
+            .repeatable(false)
+            .argument("<url>", true)
+            .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleUrl)));
+
         options.addOption(
             Option("help", "h", "Help information")
                 .required(false)
@@ -65,6 +67,11 @@ protected:
             .repeatable(false)
             .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::handleVersion)));
 
+    }
+
+    void HandleUrl(const std::string& name, const std::string& value)
+    {
+        std::cout << "Got Server URL " << value << "\n";
     }
 
     void handleHelp(const std::string& name, const std::string& value)
@@ -80,12 +87,12 @@ protected:
 
     void handleVersion(const std::string& name, const std::string& value)
     {
-        std::cout << "AudioTest version " << VERSION << "\n";
+        std::cout << "Version " << VERSION << "\n";
         stopOptionsProcessing();
         _helpRequested = true;
     }
 
-    int main(const std::vector<std::string>& args)
+    int main(const std::vector<std::string>& args) override
     {
         if (_helpRequested)
             return Application::EXIT_OK;
