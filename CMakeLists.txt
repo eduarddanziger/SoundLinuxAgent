@@ -18,7 +18,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-find_package(spdlog REQUIRED)
+find_package(spdlog 1.15 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(Poco REQUIRED Foundation Util Net)
 
@@ -29,16 +29,17 @@ configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.
 
 add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
 set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
-
+target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY)
 target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
 
 target_link_libraries(SoundLinuxCli PRIVATE
-    spdlog::spdlog
+    spdlog::spdlog_header_only
     SoundLib
 )
 
 add_executable(SoundLinuxDaemon "SoundLinuxDaemon.cpp")
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
+target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
 
 target_include_directories(SoundLinuxDaemon PRIVATE 
     ${CMAKE_BINARY_DIR}
@@ -47,7 +48,7 @@ target_include_directories(SoundLinuxDaemon PRIVATE
 
 # Link libraries to SoundLinuxDaemon
 target_link_libraries(SoundLinuxDaemon PRIVATE
-    spdlog::spdlog
+    spdlog::spdlog_header_only
     SoundLib
     Poco::Foundation
     Poco::Util
