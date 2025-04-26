@@ -1,12 +1,24 @@
 {
   "version": "0.2.0",
   "configurations": [
-   
     {
-      "name": "Debug SoundLinuxAgent",
+      "name": "Debug SoundLinuxDaemon",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/SoundLinuxAgent",
+      "program": "${workspaceFolder}/build/SoundLinuxDaemon",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "preLaunchTask": "CMake Build"
+    },
+    {
+      "name": "Debug SoundLinuxCli",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/SoundLinuxCli",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
