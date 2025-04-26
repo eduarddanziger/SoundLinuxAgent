@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     try
     {
         // Initialize logging
-        SpdLogSetup();
+        SpdLogSetup("SoundLinuxCli.log");
         
         spdlog::info("Version {}, starting...", VERSION);
 
