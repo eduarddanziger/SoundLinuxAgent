@@ -8,14 +8,6 @@
 #include <string>
 #include <vector>
 
-/**
- * @brief Setup spdlog with both console and file logging
- * 
- * @param logFileName Name of the log file (default: "AudioTest.log")
- * @param maxFileSize Maximum size of a log file in bytes (default: 10240)
- * @param maxFiles Maximum number of rotated log files (default: 3)
- * @param logLevel The logging level (default: info)
- */
 inline void SpdLogSetup(const std::string& logFileName = "log.log", 
                  size_t maxFileSize = 10240, 
                  size_t maxFiles = 5, 

@@ -3,6 +3,7 @@
 #include "SoundAgentInterface.h"
 
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 #include "magic_enum/magic_enum_iostream.hpp"
 

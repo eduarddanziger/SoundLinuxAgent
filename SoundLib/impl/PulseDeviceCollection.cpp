@@ -108,7 +108,7 @@ void PulseDeviceCollection::StopMonitoring() {
     }
 }
 
-void PulseDeviceCollection::GetServerInfo() {
+void PulseDeviceCollection::RequestInitialInfo() {
     spdlog::info("SERVER: Requesting info...");
     pa_operation* op = pa_context_get_server_info(context_, ServerInfoCallback, this);
     pa_operation_unref(op);
@@ -214,29 +214,30 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
 
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
+
     pa_context_state_t state = pa_context_get_state(c);
-    
+    const int stateAsInt = static_cast<int>(state);
+
     switch (state) {
         case PA_CONTEXT_READY:
-            spdlog::info("PulseAudio context got READY status, state: {}", state);
-            self->GetServerInfo();
+            spdlog::info("PulseAudio context got READY status, state: {}", stateAsInt);
+            self->RequestInitialInfo();
             self->StartMonitoring();
             break;
-            
+                
         case PA_CONTEXT_FAILED:
             spdlog::error(
-                "PulseAudio context got FAILED status (state {}): {}"
-              , state, pa_strerror(pa_context_errno(c))
+                "PulseAudio context got FAILED status (state {}): {}", stateAsInt, pa_strerror(pa_context_errno(c))
             );
             break;
             
         case PA_CONTEXT_TERMINATED:
-            spdlog::info("PulseAudio context got TERMINATED status, state: {}", state);
+            spdlog::info("PulseAudio context got TERMINATED status, state: {}", stateAsInt);
             break;
             
         default:
             // Still connecting or other states
-            spdlog::info("PulseAudio context's state: {}", state);
+            spdlog::info("PulseAudio context's state: {}", stateAsInt);
             break;
     }
 }

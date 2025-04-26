@@ -19,6 +19,7 @@ endif()
 set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
+message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(Poco REQUIRED Foundation Util Net)
 
 add_subdirectory(SoundLib)
