@@ -24,10 +24,10 @@ using Poco::Util::HelpFormatter;
 class SoundLinuxDaemon final : public ServerApplication
 {
 protected:
-    static std::function<void()> s_deactivateCallback;
+    static std::function<void()> deactivateCallback_;
     static void SignalHandler(int) {
-        if (s_deactivateCallback) {
-            s_deactivateCallback();
+        if (deactivateCallback_) {
+            deactivateCallback_();
         }
     }
 
@@ -35,7 +35,7 @@ protected:
         std::function<void()> deactivateCallback
     )
     {
-        s_deactivateCallback = deactivateCallback;
+        deactivateCallback_ = deactivateCallback;
         std::signal(SIGTERM, SignalHandler);
         std::signal(SIGINT, SignalHandler);
     }
@@ -44,6 +44,8 @@ protected:
     {
         loadConfiguration();
         ServerApplication::initialize(self);
+
+        SpdLogSetup("SoundLinuxDaemon.log");
 
         if (apiBaseUrl_.empty())
         {
@@ -75,7 +77,7 @@ protected:
             Option("help", "h", "Help information")
                 .required(false)
                 .repeatable(false)
-                .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::handleHelp)));
+                .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleHelp)));
 
         options.addOption(
             Option("version", "v", "Version information")
@@ -91,7 +93,7 @@ protected:
         apiBaseUrl_ = value;
     }
 
-    void handleHelp(const std::string&, const std::string&)
+    void HandleHelp(const std::string&, const std::string&)
     {
         HelpFormatter helpFormatter(options());
         helpFormatter.setCommand(commandName());
@@ -100,22 +102,21 @@ protected:
         helpFormatter.setFooter("\n");
         helpFormatter.format(std::cout);
         stopOptionsProcessing();
-        _helpRequested = true;    }
+        helpRequested_ = true;    }
 
     void handleVersion(const std::string& , const std::string&)
     {
         std::cout << "Version " << VERSION << "\n";
         stopOptionsProcessing();
-        _helpRequested = true;
+        helpRequested_ = true;
     }
 
     int main(const std::vector<std::string>&) override
     {
-        if (_helpRequested)
+        if (helpRequested_)
             return Application::EXIT_OK;
         try
         {
-            SpdLogSetup("SoundLinuxDaemon.log");
             spdlog::info("Sound Linux Daemon {} started", VERSION); 
 
             const auto deviceCollectionSmartPtr = SoundAgent::CreateDeviceCollection();
@@ -179,7 +180,7 @@ protected:
     }
 
 private:
-    bool _helpRequested = false;
+    bool helpRequested_ = false;
 
     std::string apiBaseUrl_;
     std::string universalToken_;
@@ -190,7 +191,7 @@ private:
     static constexpr auto CODESPACE_NAME_PROPERTY_KEY = "custom.codespaceName";
 };
 
-std::function<void()> SoundLinuxDaemon::s_deactivateCallback{nullptr};
+std::function<void()> SoundLinuxDaemon::deactivateCallback_{nullptr};
 
 
 POCO_SERVER_MAIN(SoundLinuxDaemon)

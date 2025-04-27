@@ -73,8 +73,7 @@ inline std::shared_ptr<spdlog::logger> ed::model::Logger::L()
 	return spdlog::default_logger();
 }
 
-// ReSharper disable once CppInconsistentNaming
-inline auto SPD_L(ed::model::Logger::Inst().L());
+#define SPD_L ed::model::Logger::Inst().L()
 
 
 

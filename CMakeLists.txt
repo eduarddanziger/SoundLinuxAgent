@@ -97,7 +97,7 @@ if(UNIX AND NOT APPLE)
   set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
   set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
   set(CPACK_DEBIAN_SOUNDLINUXDAEMON_PACKAGE_NAME "SoundLinuxDaemon")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libspdlog-dev")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23")
 endif()
 
 # Specify the installation directory
