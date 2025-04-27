@@ -6,7 +6,9 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/SoundLinuxDaemon",
-      "args": [],
+      "args": [
+        "-url=http://localhost:5027"
+      ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
