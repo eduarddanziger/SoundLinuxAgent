@@ -22,20 +22,19 @@ class SoundLinuxDaemon final : public ServerApplication
 {
 protected:
     static std::function<void()> s_deactivateCallback;
-    static void signalHandler(int signum) {
+    static void SignalHandler(int) {
         if (s_deactivateCallback) {
             s_deactivateCallback();
         }
     }
 
     static void SetupSignalHandlers(
-        SoundDeviceCollectionInterface& collection,
         std::function<void()> deactivateCallback
     )
     {
         s_deactivateCallback = deactivateCallback;
-        std::signal(SIGTERM, signalHandler);
-        std::signal(SIGINT, signalHandler);
+        std::signal(SIGTERM, SignalHandler);
+        std::signal(SIGINT, SignalHandler);
     }
 
     void initialize(Application& self) override
@@ -69,12 +68,12 @@ protected:
 
     }
 
-    void HandleUrl(const std::string& name, const std::string& value)
+    void HandleUrl(const std::string&, const std::string& value)
     {
         std::cout << "Got Server URL " << value << "\n";
     }
 
-    void handleHelp(const std::string& name, const std::string& value)
+    void handleHelp(const std::string&, const std::string&)
     {
         HelpFormatter helpFormatter(options());
         helpFormatter.setCommand(commandName());
@@ -85,14 +84,14 @@ protected:
         stopOptionsProcessing();
         _helpRequested = true;    }
 
-    void handleVersion(const std::string& name, const std::string& value)
+    void handleVersion(const std::string& , const std::string&)
     {
         std::cout << "Version " << VERSION << "\n";
         stopOptionsProcessing();
         _helpRequested = true;
     }
 
-    int main(const std::vector<std::string>& args) override
+    int main(const std::vector<std::string>&) override
     {
         if (_helpRequested)
             return Application::EXIT_OK;
@@ -112,7 +111,7 @@ protected:
             collection.Subscribe(subscriber);
 
             std::atomic<SoundDeviceCollectionInterface*> collectionPtrAtomic(&collection);
-            SetupSignalHandlers(collection,
+            SetupSignalHandlers(
                 [&collectionPtrAtomic]()
                 {
                     spdlog::info("Termination signal received.\n");
