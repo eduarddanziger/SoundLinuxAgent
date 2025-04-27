@@ -9,6 +9,11 @@ else()
   message(STATUS "No POLICY CMP0141 detected.")
 endif()
 
+if (POLICY CMP0167)
+  message(STATUS "Detected POLICY CMP0167, set it to OLD.")
+  cmake_policy(SET CMP0167 OLD)
+endif()
+
 project("SoundLinuxAgent")
 
 # Enforce out-of-source builds
@@ -21,6 +26,9 @@ endif()
 find_package(spdlog 1.15 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(Poco REQUIRED Foundation Util Net)
+find_package(cpprestsdk REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SODIUM REQUIRED libsodium)
@@ -44,6 +52,9 @@ add_executable(SoundLinuxDaemon
     "SoundLinuxDaemon.cpp"
     "FormattedOutput.cpp"
     "SodiumCrypt.cpp"
+    "ServiceObserver.cpp"
+    "AudioDeviceApiClient.cpp"
+    "HttpRequestProcessor.cpp"
 )
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
@@ -52,6 +63,7 @@ target_include_directories(SoundLinuxDaemon PRIVATE
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}
+    ${CPPREST_INCLUDE_DIRS}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -62,6 +74,9 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     Poco::Util
     Poco::Net
     ${SODIUM_LIBRARIES}
+    cpprestsdk::cpprest
+    nlohmann_json::nlohmann_json
+    OpenSSL::SSL
 )
 
 install(TARGETS SoundLinuxCli
@@ -72,8 +87,7 @@ install(TARGETS SoundLinuxDaemon
     DESTINATION bin
     COMPONENT SoundLinuxDaemon)
 
-install(
-  FILES SoundLinuxDaemon.xml
+install(FILES SoundLinuxDaemon.xml
   DESTINATION bin
   COMPONENT SoundLinuxDaemon)
 
@@ -97,7 +111,7 @@ if(UNIX AND NOT APPLE)
   set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
   set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
   set(CPACK_DEBIAN_SOUNDLINUXDAEMON_PACKAGE_NAME "SoundLinuxDaemon")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23, libcpprest, libssl3")
 endif()
 
 # Specify the installation directory

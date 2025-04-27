@@ -9,9 +9,9 @@
 #include <csignal>
 #include <atomic>
 
-#include "AgentObserver.h"
 #include "cpversion.h"
 #include "FormattedOutput.h"
+#include "ServiceObserver.h"
 
 #include "SodiumCrypt.h"
 
@@ -51,21 +51,16 @@ protected:
         {
             apiBaseUrl_ = ReadStringConfigProperty(API_BASE_URL_PROPERTY_KEY);
         }
-
         apiBaseUrl_ += "/api/AudioDevices";
 
         universalToken_ = ReadStringConfigProperty(UNIVERSAL_TOKEN_PROPERTY_KEY);
-
         codespaceName_ = ReadStringConfigProperty(CODESPACE_NAME_PROPERTY_KEY);
-
     }
 
     void defineOptions(OptionSet& options) override
     {
         ServerApplication::defineOptions(options);
 
-
-        
         options.addOption(
             Poco::Util::Option("url", "u", "Base Server URL, e.g. http://localhost:5027")
             .required(false)
@@ -126,7 +121,9 @@ protected:
             }
             auto& collection = *deviceCollectionSmartPtr;
             
-            AgentObserver subscriber(collection);
+//            AgentObserver subscriber(collection);
+            ServiceObserver subscriber(collection, apiBaseUrl_, universalToken_, codespaceName_);
+
             collection.Subscribe(subscriber);
 
             std::atomic<SoundDeviceCollectionInterface*> collectionPtrAtomic(&collection);

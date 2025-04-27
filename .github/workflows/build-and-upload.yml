@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libglib2.0-dev libpoco-dev
+        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libglib2.0-dev libpoco-dev libcpprest-dev
 
     - name: Get version from Git tags
       id: get_version

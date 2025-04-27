@@ -1,0 +1,18 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "cppgdb",
+      "name": "SoundLinuxDaemon",
+      "project": "CMakeLists.txt",
+      "projectTarget": "SoundLinuxDaemon",
+      "comment": "Learn how to configure WSL debugging. For more info, see http://aka.ms/vslinuxdebug",
+      "debuggerConfiguration": "gdb",
+      "args": [
+        "-url=http://localhost:5027"
+      ],
+      "env": {}
+    }
+  ]
+}

@@ -1,16 +1,16 @@
-﻿#include "stdafx.h"
-
-#include "HttpRequestProcessor.h"
+﻿#include "HttpRequestProcessor.h"
 
 #include "FormattedOutput.h"
 
 #include <nlohmann/json.hpp>
 #include <format>
 
+#include "SpdLogger.h"
 
-HttpRequestProcessor::HttpRequestProcessor(std::wstring apiBaseUrl,
-    std::wstring universalToken,
-    std::wstring codespaceName)  // Added codespaceName parameter
+
+HttpRequestProcessor::HttpRequestProcessor(std::string apiBaseUrl,
+                                           std::string universalToken,
+                                           std::string codespaceName)  // Added codespaceName parameter
     : apiBaseUrlNoTrailingSlash_(std::move(apiBaseUrl))
     , universalToken_(std::move(universalToken))
     , codespaceName_(std::move(codespaceName))  // Initialize new member
@@ -32,7 +32,7 @@ HttpRequestProcessor::~HttpRequestProcessor()
     }
 }
 
-void HttpRequestProcessor::EnqueueRequest(const web::http::http_request & request, const std::wstring & urlSuffix,
+void HttpRequestProcessor::EnqueueRequest(const web::http::http_request & request, const std::string & urlSuffix,
                                           const std::string & hint)
 {
     std::unique_lock lock(mutex_);
@@ -44,7 +44,7 @@ void HttpRequestProcessor::EnqueueRequest(const web::http::http_request & reques
     condition_.notify_one();
 }
 
-bool HttpRequestProcessor::SendRequest(const RequestItem & item, const std::wstring & urlBase)
+bool HttpRequestProcessor::SendRequest(const RequestItem & item, const std::string & urlBase)
 {
     const auto messageDeviceAppendix = item.Hint;
 
@@ -141,9 +141,9 @@ void HttpRequestProcessor::ProcessingWorker()
         }
 
 		// Check if base url is on GitHub Codespace. If not , we don't need to wake up
-        if (apiBaseUrlNoTrailingSlash_.find(L".github.") == std::wstring::npos)
+        if (apiBaseUrlNoTrailingSlash_.find(".github.") == std::string::npos)
         {// NOT  a GitHub Codespace, no wake up
-            const auto msg = std::wstring(L"Request sending to \"") + apiBaseUrlNoTrailingSlash_ + L"\" unsuccessful. Wake up make no sense. Skipping request.";
+            const auto msg = std::string("Request sending to \"") + apiBaseUrlNoTrailingSlash_ + "\" unsuccessful. Wake up make no sense. Skipping request.";
 			FormattedOutput::LogAndPrint(msg);
 
 			std::unique_lock lock(mutex_);
@@ -153,7 +153,7 @@ void HttpRequestProcessor::ProcessingWorker()
 
 		if (++retryAwakingCount_ <= MAX_AWAKING_RETRIES)
 		{   // Wake-retrials are yet to be exhausted
-            const auto url = std::format(L"https://api.github.com/user/codespaces/{}/start", codespaceName_);
+            const auto url = std::format("https://api.github.com/user/codespaces/{}/start", codespaceName_);
             SendRequest(
                 CreateAwakingRequest()
                 , url);
@@ -174,16 +174,14 @@ void HttpRequestProcessor::ProcessingWorker()
 
 HttpRequestProcessor::RequestItem HttpRequestProcessor::CreateAwakingRequest() const
 {
-    const std::string codespaceNameUtf8 = utility::conversions::to_utf8string(codespaceName_);
-
     const nlohmann::json payload = {
         // ReSharper disable once StringLiteralTypo
-        {"codespace_name", codespaceNameUtf8}
+        {"codespace_name", codespaceName_}
     };
     // Convert nlohmann::json to cpprestsdk::json::value
     const web::json::value jsonPayload = web::json::value::parse(payload.dump());
 
-    const std::wstring authorizationValue = L"Bearer " + universalToken_;
+    const std::string authorizationValue = "Bearer " + universalToken_;
 
     web::http::http_request request(web::http::methods::POST);
     request.headers().add(U("Authorization"), authorizationValue);
@@ -192,5 +190,5 @@ HttpRequestProcessor::RequestItem HttpRequestProcessor::CreateAwakingRequest() c
     request.set_body(jsonPayload);
 
 	std::ostringstream oss; oss << " awaking a backend " << retryAwakingCount_ << " / " << MAX_AWAKING_RETRIES;
-    return RequestItem{ .Request = request, .UrlSuffix = L"" ,.Hint = oss.str() };
+    return RequestItem{ .Request = request, .UrlSuffix = "" ,.Hint = oss.str() };
 }

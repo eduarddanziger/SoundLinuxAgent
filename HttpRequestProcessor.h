@@ -8,19 +8,21 @@
 #include <atomic>
 #include <chrono>
 
+#include <ClassDefHelper.h>
+
 class HttpRequestProcessor {
 
 public:
     struct RequestItem {
         web::http::http_request Request;
-        std::wstring UrlSuffix;
+        std::string UrlSuffix;
         std::string Hint; // For logging/tracking
     };
 
     // Updated constructor: now takes both apiBaseUrl and codespaceName, along with universalToken.
-    HttpRequestProcessor(std::wstring apiBaseUrl,
-                         std::wstring universalToken,
-                         std::wstring codespaceName);
+    HttpRequestProcessor(std::string apiBaseUrl,
+                         std::string universalToken,
+                         std::string codespaceName);
 
     DISALLOW_COPY_MOVE(HttpRequestProcessor);
 
@@ -28,17 +30,17 @@ public:
 
     void EnqueueRequest(
         const web::http::http_request & request,
-        const std::wstring & urlSuffix, const std::string & hint);
+        const std::string & urlSuffix, const std::string & hint);
 
 private:
     void ProcessingWorker();
-    static bool SendRequest(const RequestItem & item, const std::wstring & urlBase);
+    static bool SendRequest(const RequestItem & item, const std::string & urlBase);
     RequestItem CreateAwakingRequest() const;
 
 private:
-    std::wstring apiBaseUrlNoTrailingSlash_;
-    std::wstring universalToken_;
-    std::wstring codespaceName_; // Newly added member for codespace name
+    std::string apiBaseUrlNoTrailingSlash_;
+    std::string universalToken_;
+    std::string codespaceName_; // Newly added member for codespace name
 
     std::queue<RequestItem> requestQueue_;
     std::mutex mutex_;

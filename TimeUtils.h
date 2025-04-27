@@ -51,7 +51,7 @@ namespace ed
 
 		// ReSharper disable once CppUseStructuredBinding
 		tm localTimeT{};
-		if (localtime_r(&timeT, &localTimeT) != 0)
+		if (localtime_r(&timeT, &localTimeT) == nullptr)
 		{
 			return std::basic_string<Char_>();
 		}
