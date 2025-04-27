@@ -8,11 +8,18 @@
 #include <string>
 #include <vector>
 
+#include "ClassDefHelper.h"
+
 inline void SpdLogSetup(const std::string& logFileName = "log.log", 
-                 size_t maxFileSize = 10240, 
-                 size_t maxFiles = 5, 
-                 spdlog::level::level_enum logLevel = spdlog::level::info)
+                        size_t maxFileSize = 10240, 
+                        size_t maxFiles = 5, 
+                        spdlog::level::level_enum logLevel = spdlog::level::info)
 {
+    static bool initialized = false;
+    if (initialized)
+    {
+        return;
+    }
     const auto logPath = std::filesystem::path(std::getenv("HOME")) / "logs";  // NOLINT(concurrency-mt-unsafe)
     // Create logs directory if it doesn't exist
     std::filesystem::create_directories(logPath);
@@ -30,4 +37,44 @@ inline void SpdLogSetup(const std::string& logFileName = "log.log",
     spdlog::set_pattern("%^%Y-%m-%d %H:%M:%S.%f [%l] %v%$");
 
     spdlog::info("Logging initialized. Log file: {}", (logPath / logFileName).string());
+	initialized = true;
 }
+
+namespace ed::model
+{
+    class Logger final  // NOLINT(clang-diagnostic-padded)
+    {
+    public:
+        DISALLOW_COPY_MOVE(Logger);
+    private:
+        Logger();
+    public:
+        ~Logger() = default;
+
+        static Logger& Inst();
+        std::shared_ptr<spdlog::logger> L();
+    };
+}
+
+inline ed::model::Logger::Logger()
+{
+    SpdLogSetup();
+}
+
+inline ed::model::Logger& ed::model::Logger::Inst()
+{
+    static Logger logger;
+    return logger;
+}
+
+// ReSharper disable once CppMemberFunctionMayBeStatic
+inline std::shared_ptr<spdlog::logger> ed::model::Logger::L()
+{
+	return spdlog::default_logger();
+}
+
+// ReSharper disable once CppInconsistentNaming
+inline auto SPD_L(ed::model::Logger::Inst().L());
+
+
+
