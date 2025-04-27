@@ -1,4 +1,4 @@
-#include "SpdLogSetup.h"
+#include "SpdLogger.h"
 
 #include <Poco/Util/ServerApplication.h>
 #include <Poco/Util/Option.h>
@@ -11,6 +11,9 @@
 
 #include "AgentObserver.h"
 #include "cpversion.h"
+#include "FormattedOutput.h"
+
+#include "SodiumCrypt.h"
 
 using Poco::Util::ServerApplication;
 using Poco::Util::Application;
@@ -41,6 +44,18 @@ protected:
     {
         loadConfiguration();
         ServerApplication::initialize(self);
+
+        if (apiBaseUrl_.empty())
+        {
+            apiBaseUrl_ = ReadStringConfigProperty(API_BASE_URL_PROPERTY_KEY);
+        }
+
+        apiBaseUrl_ += "/api/AudioDevices";
+
+        universalToken_ = ReadStringConfigProperty(UNIVERSAL_TOKEN_PROPERTY_KEY);
+
+        codespaceName_ = ReadStringConfigProperty(CODESPACE_NAME_PROPERTY_KEY);
+
     }
 
     void defineOptions(OptionSet& options) override
@@ -132,9 +147,44 @@ protected:
         spdlog::info("...Version {}, ended successfully...", VERSION);
         return Application::EXIT_OK;
     }
-    
+
+    [[nodiscard]] std::string ReadStringConfigProperty(const std::string& propertyName) const
+    {
+        if (!config().hasProperty(propertyName))
+        {
+            const auto msg = std::string("FATAL: No \"") + propertyName + "\" property configured.";
+            FormattedOutput::LogAsErrorPrintAndThrow(msg);
+        }
+
+        auto returnValue = config().getString(propertyName);
+        try
+        {
+            returnValue = SodiumDecrypt(returnValue, "32-characters-long-secure-key-12");
+        }
+        catch (const std::exception& ex)
+        {
+            SPD_L->info("Decryption doesn't work: {}.", ex.what());
+        }
+        catch (...)
+        {
+            const auto msg = std::string("Unknown error. Propagating...");
+            FormattedOutput::LogAndPrint(msg);
+            throw;
+        }
+
+        return returnValue;
+    }
+
 private:
     bool _helpRequested = false;
+
+    std::string apiBaseUrl_;
+    std::string universalToken_;
+    std::string codespaceName_;
+
+    static constexpr auto API_BASE_URL_PROPERTY_KEY = "custom.apiBaseUrl";
+    static constexpr auto UNIVERSAL_TOKEN_PROPERTY_KEY = "custom.universalToken";
+    static constexpr auto CODESPACE_NAME_PROPERTY_KEY = "custom.codespaceName";
 };
 
 std::function<void()> SoundLinuxDaemon::s_deactivateCallback{nullptr};

@@ -21,6 +21,7 @@ endif()
 find_package(spdlog 1.15 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(Poco REQUIRED Foundation Util Net)
+find_package(Sodium REQUIRED)
 
 add_subdirectory(SoundLib)
 
@@ -37,13 +38,18 @@ target_link_libraries(SoundLinuxCli PRIVATE
     SoundLib
 )
 
-add_executable(SoundLinuxDaemon "SoundLinuxDaemon.cpp")
+add_executable(SoundLinuxDaemon
+    "SoundLinuxDaemon.cpp"
+    "FormattedOutput.cpp"
+    "SodiumCrypt.cpp"
+)
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
 
 target_include_directories(SoundLinuxDaemon PRIVATE 
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
+    ${SODIUM_INCLUDE_DIR}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -53,6 +59,7 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     Poco::Foundation
     Poco::Util
     Poco::Net
+    ${SODIUM_LIBRARY}
 )
 
 install(TARGETS SoundLinuxCli DESTINATION bin COMPONENT SoundLinuxCli)

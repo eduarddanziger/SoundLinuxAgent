@@ -1,4 +1,4 @@
-﻿#include "SpdLogSetup.h"
+﻿#include "SpdLogger.h"
 #include "cpversion.h"
 
 #include "AgentObserver.h"
