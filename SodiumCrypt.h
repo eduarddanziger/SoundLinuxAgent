@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <string>
 
 std::string SodiumDecrypt(const std::string& ciphertext, const std::string& key);
 

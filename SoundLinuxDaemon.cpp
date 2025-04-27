@@ -61,6 +61,8 @@ protected:
     void defineOptions(OptionSet& options) override
     {
         ServerApplication::defineOptions(options);
+
+
         
         options.addOption(
             Poco::Util::Option("url", "u", "Base Server URL, e.g. http://localhost:5027")
@@ -86,6 +88,7 @@ protected:
     void HandleUrl(const std::string&, const std::string& value)
     {
         std::cout << "Got Server URL " << value << "\n";
+        apiBaseUrl_ = value;
     }
 
     void handleHelp(const std::string&, const std::string&)

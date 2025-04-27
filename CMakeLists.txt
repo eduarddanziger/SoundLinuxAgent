@@ -21,7 +21,9 @@ endif()
 find_package(spdlog 1.15 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(Poco REQUIRED Foundation Util Net)
-find_package(Sodium REQUIRED)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SODIUM REQUIRED libsodium)
 
 add_subdirectory(SoundLib)
 
@@ -49,7 +51,7 @@ target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
 target_include_directories(SoundLinuxDaemon PRIVATE 
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
-    ${SODIUM_INCLUDE_DIR}
+    ${SODIUM_INCLUDE_DIRS}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -59,12 +61,21 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     Poco::Foundation
     Poco::Util
     Poco::Net
-    ${SODIUM_LIBRARY}
+    ${SODIUM_LIBRARIES}
 )
 
-install(TARGETS SoundLinuxCli DESTINATION bin COMPONENT SoundLinuxCli)
-install(TARGETS SoundLinuxDaemon DESTINATION bin COMPONENT SoundLinuxDaemon)
+install(TARGETS SoundLinuxCli
+    DESTINATION bin
+    COMPONENT SoundLinuxCli)
 
+install(TARGETS SoundLinuxDaemon
+    DESTINATION bin
+    COMPONENT SoundLinuxDaemon)
+
+install(
+  FILES SoundLinuxDaemon.xml
+  DESTINATION bin
+  COMPONENT SoundLinuxDaemon)
 
 # The package name and version
 set(CPACK_PACKAGE_NAME "SoundLinuxAgent")
