@@ -34,7 +34,16 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libglib2.0-dev libpoco-dev libcpprest-dev nlohmann-json3-dev libsodium-dev
+        sudo apt-get install -y ninja-build libpulse-dev libglib2.0-dev libpoco-dev libcpprest-dev nlohmann-json3-dev libsodium-dev
+        SAVED_DIR=$(pwd)
+        cd "${{ runner.temp }}"
+        git clone https://github.com/gabime/spdlog.git
+        cd spdlog
+        git checkout v1.15.2
+        mkdir build && cd build
+        cmake .. && cmake --build .
+        sudo make install
+        cd "$SAVED_DIR"
 
     - name: Get version from Git tags
       id: get_version
