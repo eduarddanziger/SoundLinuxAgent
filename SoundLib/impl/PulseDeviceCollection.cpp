@@ -114,8 +114,8 @@ void PulseDeviceCollection::RequestInitialInfo() {
     pa_operation_unref(op);
 }
 
-template<typename InfoType>
-void PulseDeviceCollection::InfoCallback(pa_context*, const InfoType* info, int eol, void* userdata,
+template<typename INFO_T_>
+void PulseDeviceCollection::InfoCallback(pa_context*, const INFO_T_* info, int eol, void* userdata,
     SoundDeviceEventType event) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
@@ -163,8 +163,8 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     }
 }
 
-template<typename InfoType>
-void PulseDeviceCollection::ChangedInfoCallback(pa_context*, const InfoType* info, int eol, void* userdata)
+template<typename INFO_T_>
+void PulseDeviceCollection::ChangedInfoCallback(pa_context*, const INFO_T_* info, int eol, void* userdata)
 {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
@@ -300,13 +300,9 @@ void PulseDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
 
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
     if (!info) {
-        std::cerr << "Failed to get server info." << std::endl;
+        spdlog::error("Failed to get server info.");
         return;
     }
-
-    std::cout << "SERVER Info:" << std::endl;
-    std::cout << "  Default Sink: " << info->default_sink_name << std::endl;
-    std::cout << "  Default Source: " << info->default_source_name << std::endl;
 
     // Process server info
     // For example, you might want to get the default sink and source names

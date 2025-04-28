@@ -42,12 +42,12 @@ void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std:
     if (event == SoundDeviceEventType::Confirmed)
     {
         const auto soundDeviceInterface = collection_.CreateItem(devicePnpId);
-        PostDeviceToApi(event, soundDeviceInterface.get(), "(by confirmation) ");
+        PostDeviceToApi(event, soundDeviceInterface.get(), "(by device info requesting) ");
     }
     else if (event == SoundDeviceEventType::Discovered)
     {
         const auto soundDeviceInterface = collection_.CreateItem(devicePnpId);
-        PostDeviceToApi(event, soundDeviceInterface.get(), "(by discovery) ");
+        PostDeviceToApi(event, soundDeviceInterface.get(), "(by device discovery) ");
     }
     else if (event == SoundDeviceEventType::VolumeRenderChanged || event == SoundDeviceEventType::VolumeCaptureChanged)
     {
@@ -55,15 +55,12 @@ void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std:
 		const bool renderOrCapture = event == SoundDeviceEventType::VolumeRenderChanged;
         PutVolumeChangeToApi(devicePnpId, renderOrCapture, renderOrCapture ? soundDeviceInterface->GetCurrentRenderVolume() : soundDeviceInterface->GetCurrentCaptureVolume());
     }
-    /*
-    else if (event == SoundDeviceEventType::Removed)
+    else if (event == SoundDeviceEventType::Detached)
     {
-        RemoveToApi(devicePnpId);
+        // not yet implemented RemoveToApi(devicePnpId);
     }
     else
 	{
-		SPD_L->warn("Unknown event type: {}", static_cast<int>(event));
-	}
-	*/
-
+        spdlog::warn("Unexpected event type: {}", static_cast<int>(event));
+    }
 }
