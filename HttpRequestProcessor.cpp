@@ -32,13 +32,13 @@ HttpRequestProcessor::~HttpRequestProcessor()
     }
 }
 
-void HttpRequestProcessor::EnqueueRequest(const web::http::http_request & request, const std::string & urlSuffix,
+void HttpRequestProcessor::EnqueueRequest(const web::http::http_request & request, const std::string & urlSuffix, const std::string & payload,
                                           const std::string & hint)
 {
     std::unique_lock lock(mutex_);
 
     // Add to queue
-    requestQueue_.push(RequestItem{.Request = request, .UrlSuffix = urlSuffix ,.Hint = hint});
+    requestQueue_.push_back(RequestItem{.Request = request, .UrlSuffix = urlSuffix, .Payload = payload, .Hint = hint});
 
     // Notify worker thread
     condition_.notify_one();
@@ -50,7 +50,7 @@ bool HttpRequestProcessor::SendRequest(const RequestItem & item, const std::stri
 
     try
     {
-        SPD_L->info("Processing request{}", messageDeviceAppendix);
+        SPD_L->info("Processing request: {}", messageDeviceAppendix);
 
         // Create HTTP client object
         web::http::client::http_client client(urlBase + item.UrlSuffix);
@@ -119,23 +119,15 @@ void HttpRequestProcessor::ProcessingWorker()
             }
 
             item = requestQueue_.front();
+            requestQueue_.pop_front();
         }
 
-		// If the sending of the "genuine" request (before the actual copy) was successful, let's skip the copy and continue processing
-		if (item.Hint.find("(copy)") != std::string::npos && successfullySent_)
-		{
-			std::unique_lock lock(mutex_);
-			requestQueue_.pop();
-			continue;
-		}
-
+        const auto itemCloned = CloneRequestItem(item);
 
 		// If the sending was successful, set retries to 0 and remove the request from the queue
-        if ((successfullySent_ = SendRequest(item, apiBaseUrlNoTrailingSlash_)))
+        if ((SendRequest(item, apiBaseUrlNoTrailingSlash_)))
 		{   // Request was successful
-            std::unique_lock lock(mutex_);
             retryAwakingCount_ = 0;
-            requestQueue_.pop();
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             continue;
         }
@@ -145,30 +137,27 @@ void HttpRequestProcessor::ProcessingWorker()
         {// NOT  a GitHub Codespace, no wake up
             const auto msg = std::string("Request sending to \"") + apiBaseUrlNoTrailingSlash_ + "\" unsuccessful. Wake up make no sense. Skipping request.";
 			FormattedOutput::LogAndPrint(msg);
-
-			std::unique_lock lock(mutex_);
-			requestQueue_.pop();
 			continue;
         }
 
 		if (++retryAwakingCount_ <= MAX_AWAKING_RETRIES)
 		{   // Wake-retrials are yet to be exhausted
+
             const auto url = std::format("https://api.github.com/user/codespaces/{}/start", codespaceName_);
             SendRequest(
                 CreateAwakingRequest()
                 , url);
+            std::unique_lock lock(mutex_);
+            requestQueue_.push_front(itemCloned); // Requeue the request!
         }
 		else
-		{   // we have tried enough. Abandon the request (pop)
-            std::unique_lock lock(mutex_);
-            requestQueue_.pop();
+		{   
             if (retryAwakingCount_ > MAX_IGNORING_RETRIES)
             {
 				retryAwakingCount_ = 0;
             }
-                
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     }
 }
 
@@ -178,8 +167,9 @@ HttpRequestProcessor::RequestItem HttpRequestProcessor::CreateAwakingRequest() c
         // ReSharper disable once StringLiteralTypo
         {"codespace_name", codespaceName_}
     };
-    // Convert nlohmann::json to cpprestsdk::json::value
-    const web::json::value jsonPayload = web::json::value::parse(payload.dump());
+    // Convert nlohmann::json to string and to value
+    const std::string payloadString = payload.dump();
+    const web::json::value jsonPayload = web::json::value::parse(payloadString);
 
     const std::string authorizationValue = "Bearer " + universalToken_;
 
@@ -190,5 +180,23 @@ HttpRequestProcessor::RequestItem HttpRequestProcessor::CreateAwakingRequest() c
     request.set_body(jsonPayload);
 
 	std::ostringstream oss; oss << " awaking a backend " << retryAwakingCount_ << " / " << MAX_AWAKING_RETRIES;
-    return RequestItem{ .Request = request, .UrlSuffix = "" ,.Hint = oss.str() };
+    return RequestItem{ .Request = request, .UrlSuffix = "" , .Payload = payloadString, .Hint = oss.str() };
+}
+
+HttpRequestProcessor::RequestItem HttpRequestProcessor::CloneRequestItem(const RequestItem& original) const
+{
+    web::http::http_request cloned(original.Request.method());
+    cloned.set_request_uri(original.Request.relative_uri());
+    cloned.headers() = original.Request.headers();
+
+    const web::json::value jsonPayload = web::json::value::parse(original.Payload);
+    cloned.set_body(jsonPayload);
+  
+
+    return RequestItem{
+        .Request = cloned,
+        .UrlSuffix = original.UrlSuffix,
+        .Payload = original.Payload,
+        .Hint = original.Hint
+    };
 }
