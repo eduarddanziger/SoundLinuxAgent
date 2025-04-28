@@ -33,8 +33,8 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 
     const std::string hostName = GetHostName();
 
-    auto localTimeAsString = ed::getLocalTimeAsString("T");
-    localTimeAsString = localTimeAsString.substr(0, localTimeAsString.length() - 7);
+	auto systemTimeAsString = ed::getSystemTimeAsString("T");
+	systemTimeAsString = systemTimeAsString.substr(0, systemTimeAsString.length() - 7);
 
     const nlohmann::json payload = {
         {"pnpId", device->GetPnpId()},
@@ -42,7 +42,7 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
         {"flowType", device->GetFlow()},
         {"renderVolume", device->GetCurrentRenderVolume()},
         {"captureVolume", device->GetCurrentCaptureVolume()},
-        {"updateDate", localTimeAsString},
+        {"updateDate", systemTimeAsString},
         {"deviceMessageType", eventType},
         {"hostName", hostName}
     };
@@ -62,12 +62,12 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 
 void AudioDeviceApiClient::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string& hintPrefix) const
 {
-	auto localTimeAsString = ed::getLocalTimeAsString("T");
-	localTimeAsString = localTimeAsString.substr(0, localTimeAsString.length() - 7);
+	auto systemTimeAsString = ed::getSystemTimeAsString("T");
+	systemTimeAsString = systemTimeAsString.substr(0, systemTimeAsString.length() - 7);
 	const nlohmann::json payload = {
         {"deviceMessageType", renderOrCapture ? SoundDeviceEventType::VolumeRenderChanged : SoundDeviceEventType::VolumeCaptureChanged},
         {"volume", volume},
-        {"updateDate", localTimeAsString}
+        {"updateDate", systemTimeAsString}
 	};
 	// Convert nlohmann::json to cpprestsdk::json::value
 	const web::json::value jsonPayload = web::json::value::parse(payload.dump());

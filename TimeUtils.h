@@ -103,5 +103,52 @@ namespace ed
 		return systemTimeAsWideStringWithLocalTime(chr::system_clock::now(), betweenDateAndTime);
 	}
 
+    template<typename Char_, typename Clock_, class Duration_ = typename Clock_::duration>
+    std::basic_string<Char_> systemTimeToStringWithSystemTime(const std::chrono::time_point<Clock_, Duration_>& time, const std::basic_string<Char_>& betweenDateAndTime)
+    {
+        const time_t timeT = to_time_t(time);
+
+        tm utcTimeT{};
+        if (gmtime_r(&timeT, &utcTimeT) == nullptr)
+        {
+            return std::basic_string<Char_>();
+        }
+
+        const auto microsecondsFraction = chr::duration_cast<chr::microseconds>(
+            time.time_since_epoch()
+            ).count() % 1000000;
+
+        std::basic_ostringstream<Char_> oss; oss
+            << std::setbase(10)
+            << std::setfill(any_string_array<Char_>("0").data()[0])
+            << std::setw(4) << utcTimeT.tm_year + 1900
+            << any_string_array<Char_>("-").data()
+            << std::setw(2) << utcTimeT.tm_mon + 1
+            << any_string_array<Char_>("-").data()
+            << std::setw(2) << utcTimeT.tm_mday
+            << betweenDateAndTime
+            << std::setw(2) << utcTimeT.tm_hour
+            << any_string_array<Char_>(":").data()
+            << std::setw(2) << utcTimeT.tm_min
+            << any_string_array<Char_>(":").data()
+            << std::setw(2) << utcTimeT.tm_sec
+            << any_string_array<Char_>(".").data()
+            << std::setw(6)
+            << microsecondsFraction;
+
+        return oss.str();
+    }
+
+    template<typename Clock_, class Duration_ = typename Clock_::duration>
+    [[nodiscard]] std::string systemTimeAsStringWithSystemTime(const std::chrono::time_point<Clock_, Duration_>& time, const std::string& betweenDateAndTime = " ")
+    {
+        return systemTimeToStringWithSystemTime(time, betweenDateAndTime);
+    }
+
+    [[nodiscard]] inline std::string getSystemTimeAsString(const std::string& betweenDateAndTime = " ")
+    {
+        return systemTimeAsStringWithSystemTime(chr::system_clock::now(), betweenDateAndTime);
+    }
+
 }
 
