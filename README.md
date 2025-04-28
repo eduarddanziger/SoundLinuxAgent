@@ -48,7 +48,7 @@ Alternatively, you can install directly from the build directory
    ```bash
    /usr/bin/SoundLinuxDaemon --daemon --pid-file=/tmp/SoundLinuxDaemon.pid
    ```
-- To stop the daemon, call kill -TERM <pid>
+- To stop the daemon, call kill -TERM < pid >
 - SoundLinuxDaemon can be started as console app, too. Stop it via Ctrl-C
 - SoundLinuxDaemon accepts an optional command line parameter, that can tune the URL of the backend ASP.Net Core REST API Server, e.g.:
 	```bash
