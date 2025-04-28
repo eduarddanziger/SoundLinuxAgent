@@ -25,14 +25,12 @@ void ServiceObserver::PostDeviceToApi(const SoundDeviceEventType messageType, co
 {
     const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_);
     apiClient.PostDeviceToApi(messageType, devicePtr, hintPrefix);
-    apiClient.PostDeviceToApi(messageType, devicePtr, hintPrefix + "(copy) ");
 }
 
 void ServiceObserver::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string & hintPrefix) const
 {
 	const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_);
 	apiClient.PutVolumeChangeToApi(pnpId, renderOrCapture, volume, hintPrefix);
-	apiClient.PutVolumeChangeToApi(pnpId, renderOrCapture, volume, hintPrefix + "(copy) ");
 }
 
 void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std::string & devicePnpId)

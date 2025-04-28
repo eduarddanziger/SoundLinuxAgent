@@ -33,8 +33,8 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 
     const std::string hostName = GetHostName();
 
-    auto localTimeAsString = ed::getLocalTimeAsString("T");
-    localTimeAsString = localTimeAsString.substr(0, localTimeAsString.length() - 7);
+	auto systemTimeAsString = ed::getSystemTimeAsString("T");
+	systemTimeAsString = systemTimeAsString.substr(0, systemTimeAsString.length() - 7);
 
     const nlohmann::json payload = {
         {"pnpId", device->GetPnpId()},
@@ -42,13 +42,14 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
         {"flowType", device->GetFlow()},
         {"renderVolume", device->GetCurrentRenderVolume()},
         {"captureVolume", device->GetCurrentCaptureVolume()},
-        {"updateDate", localTimeAsString},
+        {"updateDate", systemTimeAsString},
         {"deviceMessageType", eventType},
         {"hostName", hostName}
     };
 
-    // Convert nlohmann::json to cpprestsdk::json::value
-    const web::json::value jsonPayload = web::json::value::parse(payload.dump());
+    // Convert nlohmann::json to string and to value
+    const std::string payloadString = payload.dump();
+    const web::json::value jsonPayload = web::json::value::parse(payloadString);
 
     web::http::http_request request(web::http::methods::POST);
     request.set_body(jsonPayload);
@@ -56,21 +57,22 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 
     const auto hint = hintPrefix + "Post a device: " + device->GetPnpId();
     SPD_L->info("Enqueueing: {}...", hint);
-    requestProcessor_->EnqueueRequest(request, "", hint);
+    requestProcessor_->EnqueueRequest(request, "", payloadString, hint);
     FormattedOutput::LogAndPrint("Enqueued: " + hint);
 }
 
 void AudioDeviceApiClient::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string& hintPrefix) const
 {
-	auto localTimeAsString = ed::getLocalTimeAsString("T");
-	localTimeAsString = localTimeAsString.substr(0, localTimeAsString.length() - 7);
+	auto systemTimeAsString = ed::getSystemTimeAsString("T");
+	systemTimeAsString = systemTimeAsString.substr(0, systemTimeAsString.length() - 7);
 	const nlohmann::json payload = {
         {"deviceMessageType", renderOrCapture ? SoundDeviceEventType::VolumeRenderChanged : SoundDeviceEventType::VolumeCaptureChanged},
         {"volume", volume},
-        {"updateDate", localTimeAsString}
+        {"updateDate", systemTimeAsString}
 	};
-	// Convert nlohmann::json to cpprestsdk::json::value
-	const web::json::value jsonPayload = web::json::value::parse(payload.dump());
+    // Convert nlohmann::json to string and to value
+    const std::string payloadString = payload.dump();
+    const web::json::value jsonPayload = web::json::value::parse(payloadString);
 
     web::http::http_request request(web::http::methods::PUT);
 	request.set_body(jsonPayload);
@@ -81,7 +83,7 @@ void AudioDeviceApiClient::PutVolumeChangeToApi(const std::string & pnpId, bool 
 	// Instead of sending directly, enqueue the request in the processor
 
     const auto urlSuffix = std::format("/{}/{}", pnpId, GetHostName());
-    requestProcessor_->EnqueueRequest(request, urlSuffix, hint);
+    requestProcessor_->EnqueueRequest(request, urlSuffix, payloadString, hint);
     FormattedOutput::LogAndPrint("Enqueued: " + hint);
 }
 
