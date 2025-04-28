@@ -7,6 +7,8 @@ on:
     tags:
       - 'Release-*'
   
+  workflow_dispatch:
+
 permissions:
   contents: write
 
@@ -32,7 +34,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libglib2.0-dev libpoco-dev libcpprest-dev
+        sudo apt-get install -y ninja-build libspdlog-dev libpulse-dev libglib2.0-dev libpoco-dev libcpprest-dev nlohmann-json3-dev libsodium-dev
 
     - name: Get version from Git tags
       id: get_version
