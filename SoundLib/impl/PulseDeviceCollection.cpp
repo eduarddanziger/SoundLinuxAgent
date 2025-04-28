@@ -108,14 +108,14 @@ void PulseDeviceCollection::StopMonitoring() {
     }
 }
 
-void PulseDeviceCollection::GetServerInfo() {
+void PulseDeviceCollection::RequestInitialInfo() {
     spdlog::info("SERVER: Requesting info...");
     pa_operation* op = pa_context_get_server_info(context_, ServerInfoCallback, this);
     pa_operation_unref(op);
 }
 
-template<typename InfoType>
-void PulseDeviceCollection::InfoCallback(pa_context* context, const InfoType* info, int eol, void* userdata,
+template<typename INFO_T_>
+void PulseDeviceCollection::InfoCallback(pa_context*, const INFO_T_* info, int eol, void* userdata,
     SoundDeviceEventType event) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
@@ -135,7 +135,6 @@ template<typename INFO_T_>
 void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info) {
     constexpr auto deviceFlowType = std::is_same_v<INFO_T_, pa_sink_info> ? SoundDeviceFlowType::Render :
         (std::is_same_v<INFO_T_, pa_source_info> ? SoundDeviceFlowType::Capture : SoundDeviceFlowType::None);
-    constexpr auto isCapture = std::is_same_v<INFO_T_, pa_source_info>;
     static_assert(deviceFlowType != SoundDeviceFlowType::None,
         "DeliverDeviceAndState can only be used with pa_sink_info or pa_source_info types");
 
@@ -164,8 +163,8 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     }
 }
 
-template<typename InfoType>
-void PulseDeviceCollection::ChangedInfoCallback(pa_context* context, const InfoType* info, int eol, void* userdata)
+template<typename INFO_T_>
+void PulseDeviceCollection::ChangedInfoCallback(pa_context*, const INFO_T_* info, int eol, void* userdata)
 {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
@@ -185,7 +184,6 @@ template<typename INFO_T_>
 void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
     constexpr auto deviceFlowType = std::is_same_v<INFO_T_, pa_sink_info> ? SoundDeviceFlowType::Render :
         (std::is_same_v<INFO_T_, pa_source_info> ? SoundDeviceFlowType::Capture : SoundDeviceFlowType::None);
-    constexpr auto isCapture = std::is_same_v<INFO_T_, pa_source_info>;
     static_assert(deviceFlowType != SoundDeviceFlowType::None,
         "DeliverChangedState can only be used with pa_sink_info or pa_source_info types");
 
@@ -214,29 +212,30 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
 
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
+
     pa_context_state_t state = pa_context_get_state(c);
-    
+    const int stateAsInt = static_cast<int>(state);
+
     switch (state) {
         case PA_CONTEXT_READY:
-            spdlog::info("PulseAudio context got READY status, state: {}", state);
-            self->GetServerInfo();
+            spdlog::info("PulseAudio context got READY status, state: {}", stateAsInt);
+            self->RequestInitialInfo();
             self->StartMonitoring();
             break;
-            
+                
         case PA_CONTEXT_FAILED:
             spdlog::error(
-                "PulseAudio context got FAILED status (state {}): {}"
-              , state, pa_strerror(pa_context_errno(c))
+                "PulseAudio context got FAILED status (state {}): {}", stateAsInt, pa_strerror(pa_context_errno(c))
             );
             break;
             
         case PA_CONTEXT_TERMINATED:
-            spdlog::info("PulseAudio context got TERMINATED status, state: {}", state);
+            spdlog::info("PulseAudio context got TERMINATED status, state: {}", stateAsInt);
             break;
             
         default:
             // Still connecting or other states
-            spdlog::info("PulseAudio context's state: {}", state);
+            spdlog::info("PulseAudio context's state: {}", stateAsInt);
             break;
     }
 }
@@ -301,13 +300,9 @@ void PulseDeviceCollection::ServerInfoCallback(pa_context* c, const pa_server_in
 
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
     if (!info) {
-        std::cerr << "Failed to get server info." << std::endl;
+        spdlog::error("Failed to get server info.");
         return;
     }
-
-    std::cout << "SERVER Info:" << std::endl;
-    std::cout << "  Default Sink: " << info->default_sink_name << std::endl;
-    std::cout << "  Default Source: " << info->default_source_name << std::endl;
 
     // Process server info
     // For example, you might want to get the default sink and source names
@@ -332,7 +327,6 @@ PulseDevice PulseDeviceCollection::MergeDeviceWithExistingOneBasedOnPnpIdAndFlow
             ; foundPair != pnpToDeviceMap_.end()
          )
     {
-        auto volume = device.GetCurrentRenderVolume();
         auto flow = device.GetFlow();
         uint16_t renderVolume = device.GetCurrentRenderVolume();
         uint16_t captureVolume = device.GetCurrentCaptureVolume();

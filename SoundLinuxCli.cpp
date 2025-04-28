@@ -1,13 +1,34 @@
-﻿#include "SpdLogSetup.h"
+﻿#include "SpdLogger.h"
 #include "cpversion.h"
-
-#include "AgentObserver.h"
 
 #include "KeyInputThread.h"
 
 #include <memory>
 #include <thread>
 #include <iostream>
+
+#include "SoundAgentInterface.h"
+#include "magic_enum/magic_enum_iostream.hpp"
+
+
+class AgentObserver final : public SoundDeviceObserverInterface
+{
+public:
+    explicit AgentObserver(SoundDeviceCollectionInterface& collection)
+        :collection_(collection)
+    {
+    }
+
+    DISALLOW_COPY_MOVE(AgentObserver);
+    ~AgentObserver() override = default;
+
+    void OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId) override;
+
+    static void PrintDeviceInfo(const SoundDeviceInterface* device);
+
+private:
+    SoundDeviceCollectionInterface& collection_;
+};
 
 
 int main(int argc, char *argv[])
@@ -25,7 +46,7 @@ int main(int argc, char *argv[])
     try
     {
         // Initialize logging
-        SpdLogSetup();
+        SpdLogSetup("SoundLinuxCli.log");
         
         spdlog::info("Version {}, starting...", VERSION);
 
@@ -77,4 +98,33 @@ int main(int argc, char *argv[])
     spdlog::info("...Version {}, ended successfully...", VERSION);
 
     return 0;
+}
+
+void AgentObserver::OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId)
+{
+    spdlog::info("Event \"{}\" caught, device PnP ID: {}.", magic_enum::enum_name(event), devicePnpId);
+    if (event != SoundDeviceEventType::Detached)
+    {
+        const auto device = collection_.CreateItem(devicePnpId);
+        if (device)
+        {
+            PrintDeviceInfo(device.get());
+        }
+        else
+        {
+            spdlog::warn("Failed to create device for PnP ID: {}", devicePnpId);
+        }
+    }
+}
+
+void AgentObserver::PrintDeviceInfo(const SoundDeviceInterface * device)
+{
+    using magic_enum::iostream_operators::operator<<;
+
+    const auto idString = device->GetPnpId();
+    std::ostringstream os;
+    os << "Device " << idString << ": \"" << device->GetName()
+        << "\", " << device->GetFlow() << ", Volume " << device->GetCurrentRenderVolume()
+        << " / " << device->GetCurrentCaptureVolume();
+    spdlog::info(os.str());
 }

@@ -31,7 +31,7 @@ public:
     [[nodiscard]] std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const override;
 
 private:
-    void GetServerInfo();
+    void RequestInitialInfo();
     void StartMonitoring();
     void StopMonitoring();
 
