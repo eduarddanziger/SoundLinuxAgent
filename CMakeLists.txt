@@ -23,7 +23,7 @@ endif()
 
 # set(CMAKE_BUILD_TYPE Debug)
 
-find_package(spdlog 1.15 REQUIRED)
+find_package(spdlog 1.15.1 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(Poco REQUIRED Foundation Util Net)
 find_package(cpprestsdk REQUIRED)
