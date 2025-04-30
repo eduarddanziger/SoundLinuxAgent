@@ -34,7 +34,7 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
     const std::string hostName = GetHostName();
 
     const auto nowTime = std::chrono::system_clock::now();
-    auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime);
+    auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime, "T");
 	nowTimeAsSystemTimeString = nowTimeAsSystemTimeString.substr(0, nowTimeAsSystemTimeString.length() - 7);
 
     const nlohmann::json payload = {
@@ -59,7 +59,7 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 void AudioDeviceApiClient::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string& hintPrefix) const
 {
     const auto nowTime = std::chrono::system_clock::now();
-    auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime);
+    auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime, "T");
     nowTimeAsSystemTimeString = nowTimeAsSystemTimeString.substr(0, nowTimeAsSystemTimeString.length() - 7);
 
     const nlohmann::json payload = {
