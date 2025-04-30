@@ -32,31 +32,47 @@ HttpRequestProcessor::~HttpRequestProcessor()
     }
 }
 
-void HttpRequestProcessor::EnqueueRequest(const web::http::http_request & request, const std::string & urlSuffix, const std::string & payload,
-                                          const std::string & hint)
+void HttpRequestProcessor::EnqueueRequest(bool postOrPut, const std::chrono::system_clock::time_point & time, const std::string & urlSuffix,
+                                          const std::string & payload, const std::unordered_map<std::string, std::string> & header, const std::string & hint)
 {
     std::unique_lock lock(mutex_);
 
     // Add to queue
-    requestQueue_.push_back(RequestItem{.Request = request, .UrlSuffix = urlSuffix, .Payload = payload, .Hint = hint});
+    requestQueue_.push_back(RequestItem{
+        .PostOrPut = postOrPut,
+        .Time = time,
+        .UrlSuffix = urlSuffix,
+        .Payload = payload,
+        .Header = header,
+        .Hint = hint
+    });
 
     // Notify worker thread
     condition_.notify_one();
 }
 
-bool HttpRequestProcessor::SendRequest(const RequestItem & item, const std::string & urlBase)
+bool HttpRequestProcessor::SendRequest(const RequestItem & requestItem, const std::string & urlBase)
 {
-    const auto messageDeviceAppendix = item.Hint;
+    const auto messageDeviceAppendix = requestItem.Hint;
 
     try
     {
         SPD_L->info("Processing request: {}", messageDeviceAppendix);
 
-        // Create HTTP client object
-        web::http::client::http_client client(urlBase + item.UrlSuffix);
+        // Create HTTP client
+        web::http::client::http_client client(urlBase + requestItem.UrlSuffix);
+
+        // Create HTTP request
+        web::http::http_request httpRequest(requestItem.PostOrPut ? web::http::methods::POST : web::http::methods::PUT);
+        httpRequest.headers().set_content_type("application/json");
+        httpRequest.set_body(web::json::value::parse(requestItem.Payload));
+        for (const auto& [name, val] : requestItem.Header)
+        {
+            httpRequest.headers().add(name, val);
+        }
 
         // Synchronously send the request and get response
-        const web::http::http_response response = client.request(item.Request).get();
+        const web::http::http_response response = client.request(httpRequest).get();
 
         if (const auto statusCode = response.status_code();
             statusCode == web::http::status_codes::Created ||
@@ -122,10 +138,10 @@ void HttpRequestProcessor::ProcessingWorker()
             requestQueue_.pop_front();
         }
 
-        const auto itemCloned = CloneRequestItem(item);
+        const auto itemCloned = item;
 
 		// If the sending was successful, set retries to 0 and remove the request from the queue
-        if ((SendRequest(item, apiBaseUrlNoTrailingSlash_)))
+        if (SendRequest(item, apiBaseUrlNoTrailingSlash_))
 		{   // Request was successful
             retryAwakingCount_ = 0;
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -143,19 +159,21 @@ void HttpRequestProcessor::ProcessingWorker()
 		if (++retryAwakingCount_ <= MAX_AWAKING_RETRIES)
 		{   // Wake-retrials are yet to be exhausted
 
+            // send awaking request
             const auto url = std::format("https://api.github.com/user/codespaces/{}/start", codespaceName_);
             SendRequest(
                 CreateAwakingRequest()
                 , url);
-            std::unique_lock lock(mutex_);
-            requestQueue_.push_front(itemCloned); // Requeue the request!
+
+			// push the prepared cloned request back to the queue
+		    std::unique_lock lock(mutex_);
+            requestQueue_.push_front(itemCloned);
         }
 		else
-		{   
-            if (retryAwakingCount_ > MAX_IGNORING_RETRIES)
-            {
-				retryAwakingCount_ = 0;
-            }
+		{   // Retries exhausted
+			const auto msg = std::string("Request sending to \"") + apiBaseUrlNoTrailingSlash_ + "\" unsuccessful. Retries exhausted. Skipping request's sending.";
+			FormattedOutput::LogAndPrint(msg);
+    		retryAwakingCount_ = 0;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     }
@@ -169,34 +187,14 @@ HttpRequestProcessor::RequestItem HttpRequestProcessor::CreateAwakingRequest() c
     };
     // Convert nlohmann::json to string and to value
     const std::string payloadString = payload.dump();
-    const web::json::value jsonPayload = web::json::value::parse(payloadString);
 
     const std::string authorizationValue = "Bearer " + universalToken_;
-
-    web::http::http_request request(web::http::methods::POST);
-    request.headers().add(U("Authorization"), authorizationValue);
-    request.headers().add(U("Accept"), U("application/vnd.github.v3+json"));
-    request.headers().set_content_type(U("application/json"));
-    request.set_body(jsonPayload);
+	std::unordered_map<std::string, std::string> header{
+		{"Authorization", authorizationValue},
+		{"Accept", "application/vnd.github.v3+json"}
+	};
 
 	std::ostringstream oss; oss << " awaking a backend " << retryAwakingCount_ << " / " << MAX_AWAKING_RETRIES;
-    return RequestItem{ .Request = request, .UrlSuffix = "" , .Payload = payloadString, .Hint = oss.str() };
+    return RequestItem{.PostOrPut = true, .Time = std::chrono::system_clock::now(), .UrlSuffix = "" , .Payload = payloadString, .Header = header, .Hint = oss.str() };
 }
 
-HttpRequestProcessor::RequestItem HttpRequestProcessor::CloneRequestItem(const RequestItem& original) const
-{
-    web::http::http_request cloned(original.Request.method());
-    cloned.set_request_uri(original.Request.relative_uri());
-    cloned.headers() = original.Request.headers();
-
-    const web::json::value jsonPayload = web::json::value::parse(original.Payload);
-    cloned.set_body(jsonPayload);
-  
-
-    return RequestItem{
-        .Request = cloned,
-        .UrlSuffix = original.UrlSuffix,
-        .Payload = original.Payload,
-        .Hint = original.Hint
-    };
-}

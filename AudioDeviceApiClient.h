@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <cpprest/http_client.h>
 #include <memory>
 
 #include "SoundAgentInterface.h"
