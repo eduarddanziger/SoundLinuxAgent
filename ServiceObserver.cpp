@@ -2,17 +2,17 @@
 
 #include <iostream>
 
-#include "FormattedOutput.h"
 #include "AudioDeviceApiClient.h"
 #include "HttpRequestProcessor.h"
 
 #include <SpdLogger.h>
 #include "StringUtils.h"
+#include "magic_enum/magic_enum.hpp"
 
 ServiceObserver::ServiceObserver(SoundDeviceCollectionInterface& collection,
-    std::string apiBaseUrl,
-    std::string universalToken,
-    std::string codespaceName) // Added codespaceName parameter
+                                 std::string apiBaseUrl,
+                                 std::string universalToken,
+                                 std::string codespaceName) // Added codespaceName parameter
     : collection_(collection)
     , apiBaseUrl_(std::move(apiBaseUrl))
     , universalToken_(std::move(universalToken))
@@ -35,7 +35,7 @@ void ServiceObserver::PutVolumeChangeToApi(const std::string & pnpId, bool rende
 
 void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std::string & devicePnpId)
 {
-    FormattedOutput::PrintEvent(event, devicePnpId);
+    spdlog::info("Event caught: {}, device PnP id: {}.", magic_enum::enum_name(event), devicePnpId);
 
     if (event == SoundDeviceEventType::Confirmed)
     {

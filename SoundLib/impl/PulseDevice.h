@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "SoundAgentInterface.h"
+#include "../../public/SoundAgentInterface.h"
 
 class PulseDevice final : public SoundDeviceInterface  // NOLINT(clang-diagnostic-padded)
 {

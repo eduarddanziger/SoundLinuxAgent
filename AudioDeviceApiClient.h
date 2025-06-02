@@ -3,7 +3,7 @@
 #include <functional>
 #include <memory>
 
-#include "SoundAgentInterface.h"
+#include "public/SoundAgentInterface.h"
 
 
 class HttpRequestProcessor;
@@ -17,7 +17,6 @@ public:
     void PostDeviceToApi(SoundDeviceEventType eventType, const SoundDeviceInterface* device, const std::string & hintPrefix) const;
     void PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string& hintPrefix) const;
 
-private:
 private:
     std::shared_ptr<HttpRequestProcessor> requestProcessor_;
 	std::function<std::string()> getHostNameCallback_;

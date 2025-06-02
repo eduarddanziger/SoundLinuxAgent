@@ -8,8 +8,7 @@
 #include <set>
 
 #include "PulseDevice.h"
-#include "../SoundAgentInterface.h"
-
+#include "../../public/SoundAgentInterface.h"
 #include <pulse/glib-mainloop.h>
 #include <pulse/pulseaudio.h>
 

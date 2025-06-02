@@ -1,19 +1,20 @@
-﻿#include "HttpRequestProcessor.h"
+﻿#include "os-dependencies.h"
 
-#include "FormattedOutput.h"
+#include "SpdLogger.h"
+
+#include "HttpRequestProcessor.h"
 
 #include <nlohmann/json.hpp>
 #include <format>
 
-#include "SpdLogger.h"
 
 
 HttpRequestProcessor::HttpRequestProcessor(std::string apiBaseUrl,
                                            std::string universalToken,
-                                           std::string codespaceName)  // Added codespaceName parameter
+                                           std::string codeSpaceName)  // Added codeSpaceName parameter
     : apiBaseUrlNoTrailingSlash_(std::move(apiBaseUrl))
     , universalToken_(std::move(universalToken))
-    , codespaceName_(std::move(codespaceName))  // Initialize new member
+    , codeSpaceName_(std::move(codeSpaceName))  // Initialize new member
     , running_(true)
 {
     workerThread_ = std::thread(&HttpRequestProcessor::ProcessingWorker, this);
@@ -60,15 +61,16 @@ bool HttpRequestProcessor::SendRequest(const RequestItem & requestItem, const st
         SPD_L->info("Processing request: {}", messageDeviceAppendix);
 
         // Create HTTP client
-        web::http::client::http_client client(urlBase + requestItem.UrlSuffix);
+        const auto url = utility::conversions::to_string_t(urlBase + requestItem.UrlSuffix);
+        web::http::client::http_client client(url);
 
         // Create HTTP request
         web::http::http_request httpRequest(requestItem.PostOrPut ? web::http::methods::POST : web::http::methods::PUT);
-        httpRequest.headers().set_content_type("application/json");
+        httpRequest.headers().set_content_type(L"application/json");
         httpRequest.set_body(web::json::value::parse(requestItem.Payload));
         for (const auto& [name, val] : requestItem.Header)
         {
-            httpRequest.headers().add(name, val);
+            httpRequest.headers().add(utility::conversions::to_string_t(name), utility::conversions::to_string_t(val));
         }
 
         // Synchronously send the request and get response
@@ -79,8 +81,7 @@ bool HttpRequestProcessor::SendRequest(const RequestItem & requestItem, const st
             statusCode == web::http::status_codes::OK ||
             statusCode == web::http::status_codes::NoContent)
         {
-            const auto msg = "Sent successfully: " + messageDeviceAppendix;
-            FormattedOutput::LogAndPrint(msg);
+            spdlog::info("Sent successfully: {}", messageDeviceAppendix);
         }
         else
         {
@@ -91,21 +92,17 @@ bool HttpRequestProcessor::SendRequest(const RequestItem & requestItem, const st
     }
     catch (const web::http::http_exception & ex)
     {
-        const auto msg = "HTTP exception: " + messageDeviceAppendix + ": " + std::string(ex.what());
-        FormattedOutput::LogAndPrint(msg);
+        spdlog::info("HTTP exception: {}: {}", messageDeviceAppendix, ex.what());
         return false;
     }
     catch (const std::exception & ex)
     {
-        const auto msg = "Common exception while sending HTTP request: " + messageDeviceAppendix + ": " +
-            std::string(ex.what());
-        FormattedOutput::LogAndPrint(msg);
+        spdlog::info("Common exception while sending HTTP request: {}: {}", messageDeviceAppendix, ex.what());
         return false;
     }
     catch (...)
     {
-        const auto msg = "Unspecified exception while sending HTTP request: " + messageDeviceAppendix;
-        FormattedOutput::LogAndPrint(msg);
+        spdlog::info("Unspecified exception while sending HTTP request: {}", messageDeviceAppendix);
     }
     return true;
 }
@@ -147,20 +144,19 @@ void HttpRequestProcessor::ProcessingWorker()
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
             continue;
         }
-
-		// Check if base url is on GitHub Codespace. If not , we don't need to wake up
+				
+		// Check if base url is on GitHub codespace. If not , we don't need to wake up
         if (apiBaseUrlNoTrailingSlash_.find(".github.") == std::string::npos)
-        {// NOT  a GitHub Codespace, no wake up
-            const auto msg = std::string("Request sending to \"") + apiBaseUrlNoTrailingSlash_ + "\" unsuccessful. Wake up make no sense. Skipping request.";
-			FormattedOutput::LogAndPrint(msg);
-			continue;
+        {// NOT a GitHub codespace, no wake up
+            spdlog::info(R"(Request sending to "{}" unsuccessful. Waking up makes no sense. Skipping request.)", apiBaseUrlNoTrailingSlash_);
+            continue;
         }
 
 		if (++retryAwakingCount_ <= MAX_AWAKING_RETRIES)
 		{   // Wake-retrials are yet to be exhausted
 
             // send awaking request
-            const auto url = std::format("https://api.github.com/user/codespaces/{}/start", codespaceName_);
+            const auto url = std::format("https://api.github.com/user/codespaces/{}/start", codeSpaceName_);
             SendRequest(
                 CreateAwakingRequest()
                 , url);
@@ -171,11 +167,10 @@ void HttpRequestProcessor::ProcessingWorker()
         }
 		else
 		{   // Retries exhausted
-			const auto msg = std::string("Request sending to \"") + apiBaseUrlNoTrailingSlash_ + "\" unsuccessful. Retries exhausted. Skipping request's sending.";
-			FormattedOutput::LogAndPrint(msg);
+            spdlog::info(R"(Request sending to "{}" unsuccessful. Retries exhausted. Skipping request's sending.)", apiBaseUrlNoTrailingSlash_);
     		retryAwakingCount_ = 0;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1800));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
 
@@ -183,7 +178,7 @@ HttpRequestProcessor::RequestItem HttpRequestProcessor::CreateAwakingRequest() c
 {
     const nlohmann::json payload = {
         // ReSharper disable once StringLiteralTypo
-        {"codespace_name", codespaceName_}
+        {"codespace_name", codeSpaceName_}
     };
     // Convert nlohmann::json to string and to value
     const std::string payloadString = payload.dump();

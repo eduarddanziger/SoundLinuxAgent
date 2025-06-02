@@ -1,10 +1,14 @@
-﻿#include "SodiumCrypt.h"
+﻿#include "os-dependencies.h"
+
+#include "SodiumCrypt.h"
 
 #include <algorithm>
+#include <sodium.h>
+
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <vector>
-#include <sodium.h>
 #include <stdexcept>
 
 // Encrypt using XChaCha20-Poly1305

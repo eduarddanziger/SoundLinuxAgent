@@ -50,7 +50,7 @@ target_link_libraries(SoundLinuxCli PRIVATE
 
 add_executable(SoundLinuxDaemon
     "SoundLinuxDaemon.cpp"
-    "FormattedOutput.cpp"
+    
     "SodiumCrypt.cpp"
     "ServiceObserver.cpp"
     "AudioDeviceApiClient.cpp"

@@ -10,7 +10,6 @@
 #include <atomic>
 
 #include "cpversion.h"
-#include "FormattedOutput.h"
 #include "ServiceObserver.h"
 
 #include "SodiumCrypt.h"
@@ -154,7 +153,8 @@ protected:
         if (!config().hasProperty(propertyName))
         {
             const auto msg = std::string("FATAL: No \"") + propertyName + "\" property configured.";
-            FormattedOutput::LogAsErrorPrintAndThrow(msg);
+            spdlog::error(msg);
+            throw std::runtime_error(msg);
         }
 
         auto returnValue = config().getString(propertyName);
@@ -162,14 +162,13 @@ protected:
         {
             returnValue = SodiumDecrypt(returnValue, "32-characters-long-secure-key-12");
         }
-        catch (const std::exception& ex)
+        catch (const std::exception& ex)  // NOLINT(bugprone-empty-catch)
         {
-            SPD_L->info("Decryption doesn't work: {}.", ex.what());
+            spdlog::info("Decryption doesn't work: {}.", ex.what());
         }
         catch (...)
         {
-            const auto msg = std::string("Unknown error. Propagating...");
-            FormattedOutput::LogAndPrint(msg);
+            spdlog::error("Unknown error. Propagating...");
             throw;
         }
 

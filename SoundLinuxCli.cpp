@@ -7,7 +7,7 @@
 #include <thread>
 #include <iostream>
 
-#include "SoundAgentInterface.h"
+#include "public/SoundAgentInterface.h"
 #include "magic_enum/magic_enum_iostream.hpp"
 
 
