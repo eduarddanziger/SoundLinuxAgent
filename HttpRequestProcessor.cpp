@@ -66,7 +66,7 @@ bool HttpRequestProcessor::SendRequest(const RequestItem & requestItem, const st
 
         // Create HTTP request
         web::http::http_request httpRequest(requestItem.PostOrPut ? web::http::methods::POST : web::http::methods::PUT);
-        httpRequest.headers().set_content_type(L"application/json");
+        httpRequest.headers().set_content_type(U("application/json"));
         httpRequest.set_body(web::json::value::parse(requestItem.Payload));
         for (const auto& [name, val] : requestItem.Header)
         {

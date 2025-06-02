@@ -25,6 +25,10 @@ endif()
 
 find_package(spdlog 1.15.1 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
+
+find_package(fmt REQUIRED)
+message(STATUS "Found fmt version: ${fmt_VERSION}")
+
 find_package(Poco REQUIRED Foundation Util Net)
 find_package(cpprestsdk REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
@@ -45,6 +49,7 @@ target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
 
 target_link_libraries(SoundLinuxCli PRIVATE
     spdlog::spdlog_header_only
+    fmt::fmt
     SoundLib
 )
 
@@ -69,6 +74,7 @@ target_include_directories(SoundLinuxDaemon PRIVATE
 # Link libraries to SoundLinuxDaemon
 target_link_libraries(SoundLinuxDaemon PRIVATE
     spdlog::spdlog_header_only
+    fmt::fmt
     SoundLib
     Poco::Foundation
     Poco::Util
