@@ -23,13 +23,13 @@ ServiceObserver::ServiceObserver(SoundDeviceCollectionInterface& collection,
 
 void ServiceObserver::PostDeviceToApi(const SoundDeviceEventType messageType, const SoundDeviceInterface* devicePtr, const std::string & hintPrefix) const
 {
-    const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_);
+    const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName);
     apiClient.PostDeviceToApi(messageType, devicePtr, hintPrefix);
 }
 
 void ServiceObserver::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string & hintPrefix) const
 {
-	const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_);
+	const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName);
 	apiClient.PutVolumeChangeToApi(pnpId, renderOrCapture, volume, hintPrefix);
 }
 
@@ -62,3 +62,22 @@ void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std:
         spdlog::warn("Unexpected event type: {}", static_cast<int>(event));
     }
 }
+
+std::string ServiceObserver::GetHostName()
+{
+    // ReSharper disable once CppInconsistentNaming
+    constexpr size_t MAX_COMPUTER_NAME_LENGTH = 256;
+    static const std::string HOST_NAME = []() -> std::string
+        {
+            char hostNameBuffer[MAX_COMPUTER_NAME_LENGTH];
+            if (gethostname(hostNameBuffer, MAX_COMPUTER_NAME_LENGTH) != 0) {
+                return "UNKNOWN_HOST";
+            }
+            std::string hostName(hostNameBuffer);
+            std::ranges::transform(hostName, hostName.begin(),
+                [](char c) { return std::toupper(c); });
+            return hostName;
+        }();
+    return HOST_NAME;
+}
+

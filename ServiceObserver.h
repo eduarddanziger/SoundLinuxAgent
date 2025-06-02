@@ -26,4 +26,5 @@ private:
     std::string universalToken_;
     std::string codespaceName_; // Newly added member for codespaceName
     std::shared_ptr<HttpRequestProcessor> requestProcessorSmartPtr_;
+    static std::string GetHostName();
 };

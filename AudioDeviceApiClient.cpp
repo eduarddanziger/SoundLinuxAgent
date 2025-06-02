@@ -16,8 +16,9 @@
 
 
 // ReSharper disable once CppPassValueParameterByConstReference
-AudioDeviceApiClient::AudioDeviceApiClient(std::shared_ptr<HttpRequestProcessor> processor)  // NOLINT(performance-unnecessary-value-param, modernize-pass-by-value)
+AudioDeviceApiClient::AudioDeviceApiClient(std::shared_ptr<HttpRequestProcessor> processor, std::function<std::string()> getHostNameCallback)
     : requestProcessor_(processor)  // NOLINT(performance-unnecessary-value-param)
+	, getHostNameCallback_(std::move(getHostNameCallback))
 {
 }
 
@@ -31,11 +32,10 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
         return;
     }
 
-    const std::string hostName = GetHostName();
+    const std::string hostName = getHostNameCallback_();
 
     const auto nowTime = std::chrono::system_clock::now();
-    auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime, "T");
-	nowTimeAsSystemTimeString = nowTimeAsSystemTimeString.substr(0, nowTimeAsSystemTimeString.length() - 7);
+    const auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime, "T") + "Z";
 
     const nlohmann::json payload = {
         {"pnpId", device->GetPnpId()},
@@ -59,8 +59,7 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 void AudioDeviceApiClient::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string& hintPrefix) const
 {
     const auto nowTime = std::chrono::system_clock::now();
-    auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime, "T");
-    nowTimeAsSystemTimeString = nowTimeAsSystemTimeString.substr(0, nowTimeAsSystemTimeString.length() - 7);
+    const auto nowTimeAsSystemTimeString = ed::systemTimeAsStringWithSystemTime(nowTime, "T") + "Z";
 
     const nlohmann::json payload = {
         {"deviceMessageType", renderOrCapture ? SoundDeviceEventType::VolumeRenderChanged : SoundDeviceEventType::VolumeCaptureChanged},
@@ -73,25 +72,7 @@ void AudioDeviceApiClient::PutVolumeChangeToApi(const std::string & pnpId, bool 
     SPD_L->info("Enqueueing: {}...", hint);
 	// Instead of sending directly, enqueue the request in the processor
 
-    const auto urlSuffix = std::format("/{}/{}", pnpId, GetHostName());
+    const auto urlSuffix = std::format("/{}/{}", pnpId, getHostNameCallback_());
     requestProcessor_->EnqueueRequest(false, nowTime, urlSuffix, payloadString, {}, hint);
-}
-
-std::string AudioDeviceApiClient::GetHostName()
-{
-    // ReSharper disable once CppInconsistentNaming
-    constexpr size_t MAX_COMPUTER_NAME_LENGTH = 256;
-    static const std::string HOST_NAME = []() -> std::string
-        {
-            char hostNameBuffer[MAX_COMPUTER_NAME_LENGTH];
-            if (gethostname(hostNameBuffer, MAX_COMPUTER_NAME_LENGTH) != 0) {
-                return "UNKNOWN_HOST";
-            }
-            std::string hostName(hostNameBuffer);
-            std::ranges::transform(hostName, hostName.begin(),
-                [](char c) { return std::toupper(c); });
-            return hostName;
-        }();
-    return HOST_NAME;
 }
 
