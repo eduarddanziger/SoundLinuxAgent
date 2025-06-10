@@ -141,6 +141,6 @@ inline void AgentObserver::PrintCollection() const
         const std::unique_ptr<SoundDeviceInterface> deviceSmartPtr(collection_.CreateItem(i));
         PrintDeviceInfo(deviceSmartPtr.get());
     }
-    spdlog::info("...Collection print finished.", collection_.GetSize());
+    spdlog::info("...Collection print finished.");
 }
 
