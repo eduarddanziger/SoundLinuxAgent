@@ -13,15 +13,14 @@ inline void keyInputThread
   , uint16_t timeoutBetweenReminders
 )
 {
-    std::cout << "Press 'q' and Enter to quit\n";
-    for(;;)
+    for(int iC = 0; true ; ++iC)
     {
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds);
         
         struct timeval tv;
-        tv.tv_sec = timeoutBetweenReminders;  // Timeout in seconds
+        tv.tv_sec = iC == 0 ? 1 : timeoutBetweenReminders;  // Timeout in seconds
         tv.tv_usec = 0;
 
         int ret = select(STDIN_FILENO + 1, &fds, nullptr, nullptr, &tv);

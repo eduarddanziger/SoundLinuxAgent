@@ -26,6 +26,7 @@ public:
 
     static void PrintDeviceInfo(const SoundDeviceInterface* device);
 
+    void PrintCollection() const;
 private:
     SoundDeviceCollectionInterface& collection_;
 };
@@ -81,6 +82,10 @@ int main(int argc, char *argv[])
 
         // Activate and run the main loop
         collection.ActivateAndStartLoop();
+        
+        // Print a last device collection state
+        spdlog::info("Print collection final state...");
+        subscriber.PrintCollection();
 
         if (inputThread.joinable()) {
             inputThread.join();
@@ -100,7 +105,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void AgentObserver::OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId)
+inline void AgentObserver::OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId)
 {
     spdlog::info("Event \"{}\" caught, device PnP ID: {}.", magic_enum::enum_name(event), devicePnpId);
     if (event != SoundDeviceEventType::Detached)
@@ -117,7 +122,7 @@ void AgentObserver::OnCollectionChanged(SoundDeviceEventType event, const std::s
     }
 }
 
-void AgentObserver::PrintDeviceInfo(const SoundDeviceInterface * device)
+inline void AgentObserver::PrintDeviceInfo(const SoundDeviceInterface * device)
 {
     using magic_enum::iostream_operators::operator<<;
 
@@ -128,3 +133,14 @@ void AgentObserver::PrintDeviceInfo(const SoundDeviceInterface * device)
         << " / " << device->GetCurrentCaptureVolume();
     spdlog::info(os.str());
 }
+
+inline void AgentObserver::PrintCollection() const
+{
+    for (size_t i = 0; i < collection_.GetSize(); ++i)
+    {
+        const std::unique_ptr<SoundDeviceInterface> deviceSmartPtr(collection_.CreateItem(i));
+        PrintDeviceInfo(deviceSmartPtr.get());
+    }
+    spdlog::info("...Collection print finished.", collection_.GetSize());
+}
+
