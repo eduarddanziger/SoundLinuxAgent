@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <memory>
+#include <string>
+
 
 #include "ClassDefHelper.h"
 
@@ -35,7 +37,9 @@ public:
 
 class SoundDeviceCollectionInterface {
 public:
-    [[nodiscard]] virtual std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const = 0;
+    virtual size_t GetSize() const = 0;
+    virtual std::unique_ptr<SoundDeviceInterface> CreateItem(size_t deviceNumber) const = 0;
+    virtual std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const = 0;
 
 	virtual void ActivateAndStartLoop() = 0;
 	virtual void DeactivateAndStopLoop() = 0;

@@ -7,6 +7,7 @@
 #include <pulse/glib-mainloop.h>
 #include <pulse/proplist.h>
 
+#include <ranges>
 #include <iostream>
 #include <spdlog/spdlog.h>
 
@@ -51,6 +52,28 @@ void PulseDeviceCollection::Subscribe(SoundDeviceObserverInterface & observer)
 void PulseDeviceCollection::Unsubscribe(SoundDeviceObserverInterface & observer)
 {
     observers_.erase(&observer);
+}
+
+size_t PulseDeviceCollection::GetSize() const
+{
+    return pnpToDeviceMap_.size();
+}
+
+std::unique_ptr<SoundDeviceInterface> PulseDeviceCollection::CreateItem(size_t deviceNumber) const
+{
+    if (deviceNumber >= pnpToDeviceMap_.size())
+    {
+        throw std::runtime_error("Device number is too big");
+    }
+    size_t i = 0;
+    for (const auto & recordVal : pnpToDeviceMap_ | std::views::values)
+    {
+        if (i++ == deviceNumber)
+        {
+            return std::make_unique<PulseDevice>(recordVal);
+        }
+    }
+    throw std::runtime_error("Device number not found");
 }
 
 std::unique_ptr<SoundDeviceInterface> PulseDeviceCollection::CreateItem(const std::string & devicePnpId) const
