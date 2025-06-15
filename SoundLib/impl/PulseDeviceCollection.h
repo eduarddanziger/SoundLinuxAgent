@@ -55,10 +55,13 @@ private:
     
 
     template<typename INFO_T_>
-        void DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info);
+    void DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info);
 
     template<typename INFO_T_>
-        void DeliverChangedState(const INFO_T_& info);
+    void DeliverChangedState(const INFO_T_& info);
+    
+    template<typename INFO_T_>
+    static std::pair<uint16_t, std::string> ExtractVolumeAndPnpId(const INFO_T_& info);
 
 
     // Wrapper functions to maintain the original callback signatures
@@ -91,8 +94,6 @@ private:
     {
         ChangedInfoCallback(context, sourceInfo, eol, userdata);
     }
-
-    
 
     [[nodiscard]] PulseDevice MergeDeviceWithExistingOneBasedOnPnpIdAndFlow(const PulseDevice& device) const;
 
