@@ -21,10 +21,12 @@ public:
     void OnCollectionChanged(SoundDeviceEventType event, const std::string & devicePnpId) override;
 
 private:
+    static std::string GetHostName();
+    static std::string GetOperationSystemName();
+private:
     SoundDeviceCollectionInterface& collection_;
     std::string apiBaseUrl_;
     std::string universalToken_;
     std::string codespaceName_; // Newly added member for codespaceName
     std::shared_ptr<HttpRequestProcessor> requestProcessorSmartPtr_;
-    static std::string GetHostName();
 };

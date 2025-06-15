@@ -9,6 +9,10 @@
 #include "StringUtils.h"
 #include "magic_enum/magic_enum.hpp"
 
+#include <fstream>
+#include <string>
+#include <algorithm>
+
 ServiceObserver::ServiceObserver(SoundDeviceCollectionInterface& collection,
                                  std::string apiBaseUrl,
                                  std::string universalToken,
@@ -81,3 +85,38 @@ std::string ServiceObserver::GetHostName()
     return HOST_NAME;
 }
 
+std::string ServiceObserver::GetOperationSystemName()
+{
+    std::ifstream osReleaseFile("/etc/os-release");
+
+
+    if (!osReleaseFile.is_open()) {
+        return "Linux, no version info";
+    }
+
+    std::string line;
+    std::string name, version;
+    while (std::getline(osReleaseFile, line))
+    {
+        if (constexpr auto namePrefix = "NAME="; line.find(namePrefix) == 0)
+        {
+            name = line.substr(std::strlen(namePrefix));
+            std::erase(name, '"'); // Remove quotes
+        }
+        else
+        {
+            if (constexpr auto versionPrefix = "VERSION_ID="; line.find(versionPrefix) == 0)
+            {
+                version = line.substr(std::strlen(versionPrefix));
+                std::erase(version, '"'); // Remove quotes
+            }
+        }
+    }
+
+    if (name.empty() || version.empty())
+    {
+        return "Linux, no version info";
+    }
+
+    return std::format("{} {}", name, version);
+}
