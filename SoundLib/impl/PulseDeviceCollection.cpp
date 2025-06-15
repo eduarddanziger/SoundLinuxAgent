@@ -169,8 +169,10 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
         deviceName = deviceName.substr(std::strlen(monitorPrefix));
     }
 
-    const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
-    const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
+    const uint16_t volume = 
+        (info.mute == 0) ?
+        PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(pa_cvolume_avg(&info.volume)) :
+        0;
 
     std::string pnpId;
 
@@ -223,12 +225,12 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
     static_assert(deviceFlowType != SoundDeviceFlowType::None,
         "DeliverChangedState can only be used with pa_sink_info or pa_source_info types");
 
-    const std::string deviceName = info.description;
-    const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
-    const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
+    const uint16_t volume = 
+        (info.mute == 0) ?
+        PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(pa_cvolume_avg(&info.volume)) :
+        0;
 
     std::string pnpId;
-
     // ReSharper disable once CppTooWideScopeInitStatement
     const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
     if (pnpIdPtr != nullptr) {
@@ -238,6 +240,13 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
     else {
         spdlog::info("Index {}: node.name property not found, use the name as a PnP ID\n", info.index);
         pnpId = info.name;
+
+        if (constexpr auto monitorSuffix = ".monitor";
+            pnpId.ends_with(monitorSuffix))
+        {
+            pnpId = pnpId.substr(0, pnpId.size() - std::strlen(monitorSuffix));
+        }
+
     }
 
     CheckIfVolumeChangedAndNotify(pnpId, volume, deviceFlowType);
