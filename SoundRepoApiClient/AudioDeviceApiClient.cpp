@@ -1,4 +1,4 @@
-﻿#include <os-dependencies.h>
+﻿#include "os-dependencies.h"
 
 #include "AudioDeviceApiClient.h"
 
@@ -16,9 +16,12 @@
 
 // ReSharper disable CppPassValueParameterByConstReference
 AudioDeviceApiClient::AudioDeviceApiClient(std::shared_ptr<HttpRequestProcessor> processor,
-                                           std::function<std::string()> getHostNameCallback)
+                                           std::function<std::string()> getHostNameCallback,
+                                           std::function<std::string()> getOperationSystemNameCallback
+)
     : requestProcessor_(processor)  // NOLINT(performance-unnecessary-value-param)
 	, getHostNameCallback_(std::move(getHostNameCallback))
+    , getOperationSystemNameCallback_(std::move(getOperationSystemNameCallback))
 {
 }
 // ReSharper restore CppPassValueParameterByConstReference
@@ -32,6 +35,7 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
     }
 
     const std::string hostName = getHostNameCallback_();
+    const std::string operationSystemName = getOperationSystemNameCallback_();
 
     const auto nowTime = std::chrono::system_clock::now();
     const auto timeAsUtcString = ed::TimePointToStringAsUtc(
@@ -42,13 +46,15 @@ void AudioDeviceApiClient::PostDeviceToApi(SoundDeviceEventType eventType, const
 
     const nlohmann::json payload = {
         {"pnpId", device->GetPnpId()},
+        {"hostName", hostName},
         {"name", device->GetName()},
+        {"operationSystemName", operationSystemName},
         {"flowType", device->GetFlow()},
         {"renderVolume", device->GetCurrentRenderVolume()},
         {"captureVolume", device->GetCurrentCaptureVolume()},
         {"updateDate", timeAsUtcString},
-        {"deviceMessageType", eventType},
-        {"hostName", hostName}
+        {"deviceMessageType", eventType}
+        
     };
 
     // Convert nlohmann::json to string and to value

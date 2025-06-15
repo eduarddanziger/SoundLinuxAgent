@@ -13,6 +13,8 @@
 #include <string>
 #include <algorithm>
 
+#include <sys/utsname.h>
+
 ServiceObserver::ServiceObserver(SoundDeviceCollectionInterface& collection,
                                  std::string apiBaseUrl,
                                  std::string universalToken,
@@ -27,13 +29,13 @@ ServiceObserver::ServiceObserver(SoundDeviceCollectionInterface& collection,
 
 void ServiceObserver::PostDeviceToApi(const SoundDeviceEventType messageType, const SoundDeviceInterface* devicePtr, const std::string & hintPrefix) const
 {
-    const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName);
+    const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName, GetOperationSystemName);
     apiClient.PostDeviceToApi(messageType, devicePtr, hintPrefix);
 }
 
 void ServiceObserver::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string & hintPrefix) const
 {
-	const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName);
+	const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName, GetOperationSystemName);
 	apiClient.PutVolumeChangeToApi(pnpId, renderOrCapture, volume, hintPrefix);
 }
 
@@ -89,34 +91,37 @@ std::string ServiceObserver::GetOperationSystemName()
 {
     std::ifstream osReleaseFile("/etc/os-release");
 
-
-    if (!osReleaseFile.is_open()) {
-        return "Linux, no version info";
-    }
-
-    std::string line;
-    std::string name, version;
-    while (std::getline(osReleaseFile, line))
+    std::string distroName, distroVersion;
+    if (osReleaseFile.is_open())
     {
-        if (constexpr auto namePrefix = "NAME="; line.find(namePrefix) == 0)
+        std::string line;
+        while (std::getline(osReleaseFile, line))
         {
-            name = line.substr(std::strlen(namePrefix));
-            std::erase(name, '"'); // Remove quotes
-        }
-        else
-        {
-            if (constexpr auto versionPrefix = "VERSION_ID="; line.find(versionPrefix) == 0)
+            if (constexpr auto namePrefix = "NAME="; line.find(namePrefix) == 0)
             {
-                version = line.substr(std::strlen(versionPrefix));
-                std::erase(version, '"'); // Remove quotes
+                distroName = line.substr(std::strlen(namePrefix));
+                std::erase(distroName, '"'); // Remove quotes
+            }
+            else if (constexpr auto versionPrefix = "VERSION_ID="; line.find(versionPrefix) == 0)
+            {
+                distroVersion = line.substr(std::strlen(versionPrefix));
+                std::erase(distroVersion, '"'); // Remove quotes
             }
         }
     }
 
-    if (name.empty() || version.empty())
+    utsname uts{};
+    if (uname(&uts) != 0)
     {
+        // Fallback if uname fails
+        if (!distroName.empty() && !distroVersion.empty())
+            return std::format("{} {}", distroName, distroVersion);
         return "Linux, no version info";
     }
 
-    return std::format("{} {}", name, version);
+    if (!distroName.empty() && !distroVersion.empty())
+        return std::format("{} {} {}", distroName, distroVersion, uts.release);
+
+    // Fallback: just kernel version
+    return std::format("Linux {}", uts.release);
 }
