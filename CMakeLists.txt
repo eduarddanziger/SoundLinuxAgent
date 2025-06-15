@@ -25,6 +25,10 @@ endif()
 
 find_package(spdlog 1.15.1 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
+
+find_package(fmt REQUIRED)
+message(STATUS "Found fmt version: ${fmt_VERSION}")
+
 find_package(Poco REQUIRED Foundation Util Net)
 find_package(cpprestsdk REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
@@ -45,21 +49,22 @@ target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
 
 target_link_libraries(SoundLinuxCli PRIVATE
     spdlog::spdlog_header_only
+    fmt::fmt
     SoundLib
 )
 
 add_executable(SoundLinuxDaemon
     "SoundLinuxDaemon.cpp"
-    "FormattedOutput.cpp"
     "SodiumCrypt.cpp"
     "ServiceObserver.cpp"
-    "AudioDeviceApiClient.cpp"
-    "HttpRequestProcessor.cpp"
+    "SoundRepoApiClient/AudioDeviceApiClient.cpp"
+    "SoundRepoApiClient/HttpRequestProcessor.cpp"
 )
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
 
-target_include_directories(SoundLinuxDaemon PRIVATE 
+target_include_directories(SoundLinuxDaemon PRIVATE
+    .
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}
@@ -69,6 +74,7 @@ target_include_directories(SoundLinuxDaemon PRIVATE
 # Link libraries to SoundLinuxDaemon
 target_link_libraries(SoundLinuxDaemon PRIVATE
     spdlog::spdlog_header_only
+    fmt::fmt
     SoundLib
     Poco::Foundation
     Poco::Util

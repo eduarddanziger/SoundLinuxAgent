@@ -1,4 +1,4 @@
-﻿#include "SoundAgentInterface.h"
+﻿#include "../../public/SoundAgentInterface.h"
 
 #include <stdexcept>
 

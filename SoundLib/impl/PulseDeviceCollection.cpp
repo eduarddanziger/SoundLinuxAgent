@@ -7,6 +7,7 @@
 #include <pulse/glib-mainloop.h>
 #include <pulse/proplist.h>
 
+#include <ranges>
 #include <iostream>
 #include <spdlog/spdlog.h>
 
@@ -51,6 +52,28 @@ void PulseDeviceCollection::Subscribe(SoundDeviceObserverInterface & observer)
 void PulseDeviceCollection::Unsubscribe(SoundDeviceObserverInterface & observer)
 {
     observers_.erase(&observer);
+}
+
+size_t PulseDeviceCollection::GetSize() const
+{
+    return pnpToDeviceMap_.size();
+}
+
+std::unique_ptr<SoundDeviceInterface> PulseDeviceCollection::CreateItem(size_t deviceNumber) const
+{
+    if (deviceNumber >= pnpToDeviceMap_.size())
+    {
+        throw std::runtime_error("Device number is too big");
+    }
+    size_t i = 0;
+    for (const auto & recordVal : pnpToDeviceMap_ | std::views::values)
+    {
+        if (i++ == deviceNumber)
+        {
+            return std::make_unique<PulseDevice>(recordVal);
+        }
+    }
+    throw std::runtime_error("Device number not found");
 }
 
 std::unique_ptr<SoundDeviceInterface> PulseDeviceCollection::CreateItem(const std::string & devicePnpId) const
@@ -138,7 +161,14 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     static_assert(deviceFlowType != SoundDeviceFlowType::None,
         "DeliverDeviceAndState can only be used with pa_sink_info or pa_source_info types");
 
-    const std::string deviceName = info.description;
+    std::string deviceName = info.description;
+
+    if (constexpr auto monitorPrefix = "Monitor of ";
+        deviceName.starts_with(monitorPrefix))
+    {
+        deviceName = deviceName.substr(std::strlen(monitorPrefix));
+    }
+
     const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
     const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
 
@@ -153,6 +183,12 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     else {
         spdlog::info("Index {}: node.name property not found, use the name as a PnP ID\n", info.index);
         pnpId = info.name;
+
+        if (constexpr auto monitorSuffix = ".monitor";
+            pnpId.ends_with(monitorSuffix))
+        {
+            pnpId = pnpId.substr(0, pnpId.size() - std::strlen(monitorSuffix));
+        }
     }
 
     if (event == SoundDeviceEventType::Confirmed || event == SoundDeviceEventType::Discovered) {

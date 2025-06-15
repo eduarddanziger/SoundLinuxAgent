@@ -8,8 +8,7 @@
 #include <set>
 
 #include "PulseDevice.h"
-#include "../SoundAgentInterface.h"
-
+#include "../../public/SoundAgentInterface.h"
 #include <pulse/glib-mainloop.h>
 #include <pulse/pulseaudio.h>
 
@@ -25,10 +24,12 @@ public:
     void ActivateAndStartLoop() override;
     void DeactivateAndStopLoop() override;
 
+    [[nodiscard]] size_t GetSize() const override;
+    [[nodiscard]] std::unique_ptr<SoundDeviceInterface> CreateItem(size_t deviceNumber) const override;
+    [[nodiscard]] std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const override;
+
     void Subscribe(SoundDeviceObserverInterface& observer) override;
     void Unsubscribe(SoundDeviceObserverInterface& observer) override;
-
-    [[nodiscard]] std::unique_ptr<SoundDeviceInterface> CreateItem(const std::string& devicePnpId) const override;
 
 private:
     void RequestInitialInfo();

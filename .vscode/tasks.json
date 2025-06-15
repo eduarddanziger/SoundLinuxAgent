@@ -16,6 +16,7 @@
       "type": "shell",
       "command": "cmake",
       "args": [
+        "-DCMAKE_BUILD_TYPE=Debug", // <-- Ensure debug info
         ".."
       ],
       "options": {
@@ -40,8 +41,7 @@
         "cwd": "${workspaceFolder}/build"
       },
       "group": {
-        "kind": "build",
-        "isDefault": true
+        "kind": "build"
       },
       "dependsOn": "CMake Configure",
       "problemMatcher": ["$gcc"]

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <SoundAgentInterface.h>
+#include "public/SoundAgentInterface.h"
 
 class HttpRequestProcessor;
 
@@ -20,6 +20,9 @@ public:
 public:
     void OnCollectionChanged(SoundDeviceEventType event, const std::string & devicePnpId) override;
 
+private:
+    static std::string GetHostName();
+    static std::string GetOperationSystemName();
 private:
     SoundDeviceCollectionInterface& collection_;
     std::string apiBaseUrl_;

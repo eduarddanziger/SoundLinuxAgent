@@ -7,42 +7,47 @@
 #include <condition_variable>
 #include <atomic>
 #include <chrono>
+#include <unordered_map>
 
-#include <ClassDefHelper.h>
+#include "public/ClassDefHelper.h"
 
 class HttpRequestProcessor {
 
 public:
     struct RequestItem {
-        web::http::http_request Request;
+        bool PostOrPut;
+		std::chrono::system_clock::time_point Time;
         std::string UrlSuffix;
         std::string Payload;
+        std::unordered_map<std::string, std::string> Header;
         std::string Hint; // For logging/tracking
     };
 
-    // Updated constructor: now takes both apiBaseUrl and codespaceName, along with universalToken.
     HttpRequestProcessor(std::string apiBaseUrl,
                          std::string universalToken,
-                         std::string codespaceName);
+                         std::string codeSpaceName);
 
     DISALLOW_COPY_MOVE(HttpRequestProcessor);
 
     ~HttpRequestProcessor();
 
     void EnqueueRequest(
-        const web::http::http_request & request,
-        const std::string & urlSuffix, const std::string & payload, const std::string & hint);
+        bool postOrPut,
+        const std::chrono::system_clock::time_point & time,
+        const std::string & urlSuffix, const std::string & payload,
+        const std::unordered_map<std::string, std::string> & header,
+        const std::string & hint
+    );
 
 private:
     void ProcessingWorker();
-    static bool SendRequest(const RequestItem & item, const std::string & urlBase);
-    RequestItem CreateAwakingRequest() const;
-    RequestItem CloneRequestItem(const RequestItem& original) const;
+    static bool SendRequest(const RequestItem & requestItem, const std::string & urlBase);
+    [[nodiscard]] RequestItem CreateAwakingRequest() const;
 
 private:
     std::string apiBaseUrlNoTrailingSlash_;
     std::string universalToken_;
-    std::string codespaceName_; // Newly added member for codespace name
+    std::string codeSpaceName_;
 
     std::deque<RequestItem> requestQueue_;
     std::mutex mutex_;
