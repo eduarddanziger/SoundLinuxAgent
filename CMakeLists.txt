@@ -58,13 +58,14 @@ add_executable(SoundLinuxDaemon
     
     "SodiumCrypt.cpp"
     "ServiceObserver.cpp"
-    "AudioDeviceApiClient.cpp"
-    "HttpRequestProcessor.cpp"
+    "SoundRepoApiClient/AudioDeviceApiClient.cpp"
+    "SoundRepoApiClient/HttpRequestProcessor.cpp"
 )
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
 
-target_include_directories(SoundLinuxDaemon PRIVATE 
+target_include_directories(SoundLinuxDaemon PRIVATE
+    .
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}

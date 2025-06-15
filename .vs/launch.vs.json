@@ -10,7 +10,7 @@
       "comment": "Learn how to configure WSL debugging. For more info, see http://aka.ms/vslinuxdebug",
       "debuggerConfiguration": "gdb",
       "args": [
-        "-url=http://localhost:5027"
+        "-url=http://W10x64W10:5027"
       ],
       "env": {}
     }
