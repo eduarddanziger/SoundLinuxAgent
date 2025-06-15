@@ -161,7 +161,14 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     static_assert(deviceFlowType != SoundDeviceFlowType::None,
         "DeliverDeviceAndState can only be used with pa_sink_info or pa_source_info types");
 
-    const std::string deviceName = info.description;
+    std::string deviceName = info.description;
+
+    if (constexpr auto monitorPrefix = "Monitor of ";
+        deviceName.starts_with(monitorPrefix))
+    {
+        deviceName = deviceName.substr(std::strlen(monitorPrefix));
+    }
+
     const uint32_t volumePulseAudio = pa_cvolume_avg(&info.volume);
     const uint16_t volume = PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(volumePulseAudio);
 
@@ -176,6 +183,12 @@ void PulseDeviceCollection::DeliverDeviceAndState(SoundDeviceEventType event, co
     else {
         spdlog::info("Index {}: node.name property not found, use the name as a PnP ID\n", info.index);
         pnpId = info.name;
+
+        if (constexpr auto monitorSuffix = ".monitor";
+            pnpId.ends_with(monitorSuffix))
+        {
+            pnpId = pnpId.substr(0, pnpId.size() - std::strlen(monitorSuffix));
+        }
     }
 
     if (event == SoundDeviceEventType::Confirmed || event == SoundDeviceEventType::Discovered) {
