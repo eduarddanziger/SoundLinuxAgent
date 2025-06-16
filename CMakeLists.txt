@@ -26,7 +26,7 @@ endif()
 find_package(spdlog 1.15.1 REQUIRED)
 message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 
-find_package(fmt REQUIRED)
+find_package(fmt 10.2.1 REQUIRED)
 message(STATUS "Found fmt version: ${fmt_VERSION}")
 
 find_package(Poco REQUIRED Foundation Util Net)
