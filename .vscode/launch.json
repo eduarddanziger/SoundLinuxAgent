@@ -7,6 +7,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/build/SoundLinuxDaemon",
       "args": [
+        "-url=http://192.168.0.164:5027"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
