@@ -101,12 +101,10 @@ if(NOT DEFINED PKG_VERSION)
 else()
   set(CPACK_PACKAGE_VERSION ${PKG_VERSION})
 endif()
-message(STATUS "CPACK_PACKAGE_VERSION env.variable=${CPACK_PACKAGE_VERSION}")
 
 # Configure cpversion.h from cpversion.h.using substitution of CPACK_PACKAGE_VERSION
 configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
 file(READ "${CMAKE_BINARY_DIR}/cpversion.h" CPVERSION_CONTENT)
-message(STATUS "cpversion.h created with content: ${CPVERSION_CONTENT}")
 
 set(CPACK_PACKAGE_CONTACT "Eduard Danziger <edanziger@gmx.de>")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
