@@ -43,6 +43,13 @@ jobs:
         mkdir build && cd build
         cmake .. && cmake --build .
         sudo make install
+        cd "${{ runner.temp }}"
+        git clone https://github.com/fmtlib/fmt.git
+        cd fmt
+        git checkout 10.2.1
+        mkdir build && cd build
+        cmake .. && cmake --build .
+        sudo make install
         cd "$SAVED_DIR"
 
     - name: Get version from Git tags
