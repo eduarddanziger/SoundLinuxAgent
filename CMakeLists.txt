@@ -41,6 +41,9 @@ add_subdirectory(SoundLib)
 
 # Configure cpversion.h from cpversion.h.in
 configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
+file(READ "${CMAKE_BINARY_DIR}/cpversion.h" CPVERSION_CONTENT)
+message(STATUS "cpversion.h created with content: ${CPVERSION_CONTENT}")
+
 
 add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
 set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
@@ -104,6 +107,7 @@ if(NOT DEFINED CPACK_PKG_VERSION)
 else()
   set(CPACK_PACKAGE_VERSION ${CPACK_PKG_VERSION})
 endif()
+message(STATUS "CPACK_PACKAGE_VERSION env.variable=${CPACK_PACKAGE_VERSION}")
 
 set(CPACK_PACKAGE_CONTACT "Eduard Danziger <edanziger@gmx.de>")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
