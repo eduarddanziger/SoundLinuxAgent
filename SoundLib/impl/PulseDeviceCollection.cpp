@@ -379,16 +379,16 @@ void PulseDeviceCollection::CheckIfVolumeChangedAndNotify(const std::string& pnp
     if (pnpToDeviceMap_.contains(pnpId))
     {
         auto existingDevice = pnpToDeviceMap_[pnpId];
-        if (auto prevVolume = existingDevice.GetCurrentRenderVolume();
-             type == SoundDeviceFlowType::Render && prevVolume != volume)
+        // ReSharper disable once CppTooWideScopeInitStatement
+        const auto prevVolume = existingDevice.GetCurrentRenderVolume();
+        if (type == SoundDeviceFlowType::Render && prevVolume != volume)
         {
             existingDevice.SetCurrentRenderVolume(volume);
             pnpToDeviceMap_[pnpId] = existingDevice;
 
             NotifyObservers(SoundDeviceEventType::VolumeRenderChanged, pnpId);
         }
-        else if (auto prevVolume = existingDevice.GetCurrentCaptureVolume();
-            type == SoundDeviceFlowType::Capture && prevVolume != volume)
+        else if (type == SoundDeviceFlowType::Capture && prevVolume != volume)
         {
             existingDevice.SetCurrentCaptureVolume(volume);
             pnpToDeviceMap_[pnpId] = existingDevice;
@@ -415,8 +415,8 @@ std::pair<uint16_t, std::string> PulseDeviceCollection::ExtractVolumeAndPnpId(co
         0;
 
     std::string pnpId;
-    const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
-    if (pnpIdPtr != nullptr)
+    if (const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
+        pnpIdPtr != nullptr)
     {
         pnpId = pnpIdPtr;
     }
