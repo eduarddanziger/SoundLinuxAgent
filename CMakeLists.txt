@@ -39,12 +39,6 @@ pkg_check_modules(SODIUM REQUIRED libsodium)
 
 add_subdirectory(SoundLib)
 
-# Configure cpversion.h from cpversion.h.in
-configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
-file(READ "${CMAKE_BINARY_DIR}/cpversion.h" CPVERSION_CONTENT)
-message(STATUS "cpversion.h created with content: ${CPVERSION_CONTENT}")
-
-
 add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
 set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY)
@@ -102,12 +96,17 @@ install(FILES SoundLinuxDaemon.xml
 
 # The package name and version
 set(CPACK_PACKAGE_NAME "SoundLinuxAgent")
-if(NOT DEFINED CPACK_PKG_VERSION)
+if(NOT DEFINED PKG_VERSION)
   set(CPACK_PACKAGE_VERSION "1.0.0" CACHE STRING "Package version" FORCE)
 else()
-  set(CPACK_PACKAGE_VERSION ${CPACK_PKG_VERSION})
+  set(CPACK_PACKAGE_VERSION ${PKG_VERSION})
 endif()
 message(STATUS "CPACK_PACKAGE_VERSION env.variable=${CPACK_PACKAGE_VERSION}")
+
+# Configure cpversion.h from cpversion.h.using substitution of CPACK_PACKAGE_VERSION
+configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
+file(READ "${CMAKE_BINARY_DIR}/cpversion.h" CPVERSION_CONTENT)
+message(STATUS "cpversion.h created with content: ${CPVERSION_CONTENT}")
 
 set(CPACK_PACKAGE_CONTACT "Eduard Danziger <edanziger@gmx.de>")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")

@@ -83,7 +83,7 @@ jobs:
         echo "Using version: $VERSION"
 
     - name: Configure CMake
-      run: cmake -G Ninja -B build -DCPACK_PKG_VERSION=${{ steps.get_version.outputs.VERSION }}
+      run: cmake -G Ninja -B build -DPKG_VERSION=${{ steps.get_version.outputs.VERSION }}
 
     - name: Package with CPack
       run: |
