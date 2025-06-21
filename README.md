@@ -2,13 +2,13 @@
 
 Sound Agent detects and visualizes audio endpoint devices under Linux using PulseAudio (C++). It handles audio notifications and device changes.
 
-The Sound Agent collects audio device information and sends it to a remote server.**
+The Sound Agent collects audio device information and sends it to a backend server. The backend ASP.Net Core Server resides in a repository [audio-device-repo-server](https://github.com/eduarddanziger/audio-device-repo-server/), its primary GUI client (React / TypeScript) - in [list-audio-react-app](https://github.com/eduarddanziger/list-audio-react-app/)
 
 ## Executables Generated
 - **SoundLinuxDaemon**: Linux Daemon collects audio device information and sends it to a remote server.
 - **SoundLinuxCli**: Command-line test CLI.
 
-## ## Technologies Used and Requirements
+## Used Technologies and Requirements
 - **C++20 compatible compiler**
 - **CMake 3.29 or higher**
 - **Ninja build system**
@@ -31,7 +31,7 @@ The Sound Agent collects audio device information and sends it to a remote serve
 
 In order to install SoundLinuxDaemon using the generated DEB package:
 
-1. Install a DEB-package from latest GitHub-Release:
+1. Install a DEB-package from latest GitHub-Release, [here](https://github.com/eduarddanziger/SoundLinuxAgent/releases/latest).
    ```bash
    sudo dpkg -i SoundLinuxAgent-x.x.x-Linux-SoundLinuxDaemon.deb
    ```
@@ -39,8 +39,8 @@ In order to install SoundLinuxDaemon using the generated DEB package:
 
    ```bash
    sudo apt-get install -f
+   sudo apt-get install -y libpoco-dev
    ```
-Alternatively, you can install directly from the build directory
 
 ## Starting
 
