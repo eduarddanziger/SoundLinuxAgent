@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include "SoundRepoApiClient/AudioDeviceApiClient.h"
-#include "SoundRepoApiClient/HttpRequestProcessor.h"
+#include "ApiClient/AudioDeviceApiClient.h"
+#include "ApiClient/HttpRequestProcessor.h"
 
 #include <SpdLogger.h>
 #include "StringUtils.h"

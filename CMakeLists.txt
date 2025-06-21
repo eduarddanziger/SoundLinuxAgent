@@ -54,8 +54,8 @@ add_executable(SoundLinuxDaemon
     "SoundLinuxDaemon.cpp"
     "SodiumCrypt.cpp"
     "ServiceObserver.cpp"
-    "SoundRepoApiClient/AudioDeviceApiClient.cpp"
-    "SoundRepoApiClient/HttpRequestProcessor.cpp"
+    "ApiClient/AudioDeviceApiClient.cpp"
+    "ApiClient/HttpRequestProcessor.cpp"
 )
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
