@@ -45,6 +45,31 @@
       },
       "dependsOn": "CMake Configure",
       "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Git Pull With Submodules",
+      "type": "shell",
+      "command": "git",
+      "args": [
+        "pull",
+        "--recurse-submodules"
+      ],
+      "problemMatcher": [],
+      "dependsOn": [
+        "Git Submodule Update"
+      ]
+    },
+    {
+      "label": "Git Submodule Update",
+      "type": "shell",
+      "command": "git",
+      "args": [
+        "submodule",
+        "update",
+        "--init",
+        "--recursive"
+      ],
+      "problemMatcher": []
     }
   ]
 }
