@@ -238,35 +238,7 @@ FakesAssemblies/
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
 
-# Older section
-*/.svn/*
-extern/pthreads/pthread.lib
-test/cppunit/lib/TestRunner.dll
-test/cppunit/lib/cppunitd.lib
-test/cppunit/lib/testrunnerd.lib
-test/cppunit/lib/cppunit.lib
-*.tmp
-trace*.log
-test/cppunit/lib/TestRunner.lib
-test/cppunit/lib/TestRunnerd.lib
-test/Cryptopp/
-tags
-cscope.out
-extern/OtherSPs/XFS-Tools/bin/fop.log
-extern/OtherSPs/XFS-Tools/lib/*.bak
-extern/OtherSPs/XFS-Tools/logs/error.log
-extern/OtherSPs/XFS-Tools/startReleaseXFSXMLServer-IDC.bat
-extern/OtherSPs/XFS-Tools/bin/$LogEx.txt
-extern/OtherSPs/XFS-Tools/lib/_XFScore (2).dat
-extern/OtherSPs/XFS-Tools/lib/_XFScore.dat_312
-extern/OtherSPs/XFS-Tools/lib/_XFSCore.dat
-extern/pthreads/pthread.tlog/*.tlog
-extern/pthreads/*.log
-extern/pthreads/pthread.tlog/pthread.lastbuildstate
-
 ProductVersion.*
 setups/
 *.idb
-test/XFSXMLSharedUnitTest/*.dll
 *.recipe
-*.vcxproj.FileListAbsolute.txt
