@@ -12,7 +12,7 @@
 #include "cpversion.h"
 #include "ServiceObserver.h"
 
-#include "SodiumCrypt.h"
+#include "ApiClient/SodiumCrypt.h"
 
 using Poco::Util::ServerApplication;
 using Poco::Util::Application;
