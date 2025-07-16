@@ -414,8 +414,15 @@ std::pair<uint16_t, std::string> PulseDeviceCollection::ExtractVolumeAndPnpId(co
         PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(pa_cvolume_avg(&info.volume)) :
         0;
 
+    // UNCOMMENT if you want to print properties for debugging
+    // char *props = pa_proplist_to_string_sep(info.proplist, "\n");
+    // if (props) {
+    //     std::cout << props << std::endl;
+    //     pa_xfree(props);
+    // }
+
     std::string pnpId;
-    if (const char* pnpIdPtr = pa_proplist_gets(info.proplist, "node.name");
+    if (const char* pnpIdPtr = pa_proplist_gets(info.proplist, "device.name");
         pnpIdPtr != nullptr)
     {
         pnpId = pnpIdPtr;
