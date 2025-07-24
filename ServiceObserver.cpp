@@ -5,8 +5,7 @@
 #include "ApiClient/AudioDeviceApiClient.h"
 #include "ApiClient/HttpRequestProcessor.h"
 
-#include <SpdLogger.h>
-#include "StringUtils.h"
+#include <spdlog/spdlog.h>
 #include "magic_enum/magic_enum.hpp"
 
 #include <fstream>

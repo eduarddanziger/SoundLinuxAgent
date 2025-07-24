@@ -1,7 +1,7 @@
 #include "PulseDeviceCollection.h"
 
 #include "../ScopeLogger.h"
-#include "StringUtils.h"
+#include "../ApiClient/common/StringUtils.h"
 
 #include <pulse/subscribe.h>
 #include <pulse/glib-mainloop.h>

@@ -1,4 +1,4 @@
-#include "SpdLogger.h"
+#include "ApiClient/common/SpdLogger.h"
 
 #include <Poco/Util/ServerApplication.h>
 #include <Poco/Util/Option.h>
@@ -31,7 +31,7 @@ protected:
     }
 
     static void SetupSignalHandlers(
-        std::function<void()> deactivateCallback
+        const std::function<void()> & deactivateCallback
     )
     {
         deactivateCallback_ = deactivateCallback;
@@ -44,7 +44,7 @@ protected:
         loadConfiguration();
         ServerApplication::initialize(self);
 
-        SpdLogSetup("SoundLinuxDaemon.log");
+        SetUpLog();
 
         if (apiBaseUrl_.empty())
         {
@@ -55,6 +55,32 @@ protected:
         universalToken_ = ReadStringConfigProperty(UNIVERSAL_TOKEN_PROPERTY_KEY);
         codespaceName_ = ReadStringConfigProperty(CODESPACE_NAME_PROPERTY_KEY);
     }
+
+    static void SetUpLog()
+    {
+        constexpr auto appName = "SoundLinuxDaemon";
+        ed::model::Logger::Inst().ConfigureAppNameAndVersion(appName, VERSION).SetOutputToConsole(true);
+        try
+        {
+            if (std::filesystem::path logFile;
+                ed::utility::AppPath::GetAndValidateLogFilePathName(
+                    logFile, appName)
+            )
+            {
+                ed::model::Logger::Inst().SetPathName(logFile);
+            }
+            else
+            {
+                spdlog::warn("Log file can not be written.");
+            }
+        }
+        catch (const std::exception& ex)
+        {
+            spdlog::warn("Logging set-up partially done; Log file can not be used: {}.", ex.what());
+        }
+    }
+
+
 
     void defineOptions(OptionSet& options) override
     {
