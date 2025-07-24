@@ -242,3 +242,4 @@ ProductVersion.*
 setups/
 *.idb
 *.recipe
+/.idea/inspectionProfiles/Project_Default.xml
