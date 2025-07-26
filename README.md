@@ -2,7 +2,7 @@
 
 Sound Agent detects and outputs audio endpoint devices under Linux using PulseAudio (C++). It handles audio notifications and device changes.
 
-The Sound Agent registers audio device information on a backend server via REST API, see the backend ASP.Net Core Server [audio-device-repo-server](https://github.com/eduarddanziger/audio-device-repo-server/) with a frontend in React / TypeScript: [list-audio-react-app](https://github.com/eduarddanziger/list-audio-react-app/)
+The Sound Agent registers audio device information on a backend server via REST API, see the backend Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/eduarddanziger/audio-device-repo-server/) with a React / TypeScript frontend: [list-audio-react-app](https://github.com/eduarddanziger/list-audio-react-app/)
 
 ## Executables Generated
 - **SoundLinuxDaemon**: Linux Daemon collects audio device information and sends it to a remote server.
