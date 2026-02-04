@@ -37,11 +37,52 @@ find_package(OpenSSL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SODIUM REQUIRED libsodium)
 
+# RabbitMQ (rmqa) SDK
+set(RMQA_ROOT "" CACHE PATH "Root of rmqa install (optional)")
+if (NOT RMQA_ROOT AND DEFINED ENV{RMQA_ROOT} AND NOT "$ENV{RMQA_ROOT}" STREQUAL "")
+  set(RMQA_ROOT "$ENV{RMQA_ROOT}" CACHE PATH "Root of rmqa install (optional)" FORCE)
+endif()
+
+# Some rmqcpp headers depend on Bloomberg BDE headers (e.g. <bsl_string.h>).
+# These are not necessarily installed under RMQA_ROOT/include, so allow a
+# separate deps prefix.
+set(RMQA_DEPS_ROOT "" CACHE PATH "Prefix containing rmqa dependencies (e.g. .../build/vcpkg_installed/<triplet>)")
+if (NOT RMQA_DEPS_ROOT AND RMQA_ROOT)
+  get_filename_component(_rmqa_root_abs "${RMQA_ROOT}" ABSOLUTE)
+  get_filename_component(_rmqa_root_parent "${_rmqa_root_abs}" DIRECTORY)
+  set(_rmqa_deps_guess "${_rmqa_root_parent}/build/vcpkg_installed/x64-linux")
+  if (EXISTS "${_rmqa_deps_guess}/include/bsl_string.h")
+    set(RMQA_DEPS_ROOT "${_rmqa_deps_guess}" CACHE PATH "Prefix containing rmqa dependencies (e.g. .../build/vcpkg_installed/<triplet>)" FORCE)
+  endif()
+endif()
+
+find_path(RMQA_INCLUDE_DIR
+  NAMES rmqa_rabbitcontext.h
+  HINTS "${RMQA_ROOT}"
+  PATH_SUFFIXES include
+)
+find_library(RMQA_LIBRARY
+  NAMES rmq rmqa
+  HINTS "${RMQA_ROOT}"
+  PATH_SUFFIXES lib64 lib
+)
+find_path(BDE_INCLUDE_DIR
+  NAMES bsl_string.h
+  HINTS "${RMQA_DEPS_ROOT}" "${RMQA_ROOT}"
+  PATH_SUFFIXES include
+)
+if (NOT RMQA_INCLUDE_DIR OR NOT RMQA_LIBRARY)
+  message(FATAL_ERROR "rmqa not found. Set RMQA_ROOT or install rmqa dev package.")
+endif()
+if (NOT BDE_INCLUDE_DIR)
+  message(FATAL_ERROR "bde headers not found (missing bsl_string.h). Set RMQA_DEPS_ROOT (e.g. /home/ed/vcpkg/rmqcpp/build/vcpkg_installed/x64-linux).")
+endif()
+
 add_subdirectory(SoundLib)
 
 add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
 set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
-target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY)
+target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
 target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
 
 target_link_libraries(SoundLinuxCli PRIVATE
@@ -55,10 +96,11 @@ add_executable(SoundLinuxDaemon
     "ServiceObserver.cpp"
     "ApiClient/SodiumCrypt.cpp"
     "ApiClient/AudioDeviceApiClient.cpp"
-    "ApiClient/HttpRequestProcessor.cpp"
+    "ApiClient/DirectHttpRequestDispatcher.cpp"
+    "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
 )
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
-target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
+target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
 
 target_include_directories(SoundLinuxDaemon PRIVATE
     .
@@ -66,6 +108,8 @@ target_include_directories(SoundLinuxDaemon PRIVATE
     ${Poco_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}
     ${CPPREST_INCLUDE_DIRS}
+  ${RMQA_INCLUDE_DIR}
+  ${BDE_INCLUDE_DIR}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -80,6 +124,7 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     cpprestsdk::cpprest
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
+  ${RMQA_LIBRARY}
 )
 
 install(TARGETS SoundLinuxCli
