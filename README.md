@@ -35,7 +35,7 @@ The Sound Agent registers audio device information on a backend server via REST 
 4. Build the project:
 
    ```bash
-   cmake --build out/build/linux-debug
+   cmake --build --preset linux-debug
    ```
 
 ## Installation

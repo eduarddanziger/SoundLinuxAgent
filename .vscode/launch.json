@@ -5,7 +5,7 @@
       "name": "Debug SoundLinuxDaemon",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/SoundLinuxDaemon",
+      "program": "${workspaceFolder}/out/build/linux-debug/SoundLinuxDaemon",
       "args": [
 //        "-url=http://192.168.0.164:5027"
       ],
@@ -21,13 +21,13 @@
           "ignoreFailures": true
         }
       ],
-      "preLaunchTask": "CMake Build"
+      "preLaunchTask": "CMake Build Debug"
     },
     {
       "name": "Debug SoundLinuxCli",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/SoundLinuxCli",
+      "program": "${workspaceFolder}/out/build/linux-debug/SoundLinuxCli",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
@@ -41,7 +41,7 @@
           "ignoreFailures": true
         }
       ],
-      "preLaunchTask": "CMake Build",
+      "preLaunchTask": "CMake Build Debug",
       "miDebuggerPath": "/usr/bin/gdb",
       "logging": {
         "engineLogging": true

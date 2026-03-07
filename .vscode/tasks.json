@@ -2,55 +2,30 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Create Build Directory",
+      "label": "CMake Configure Debug",
       "type": "shell",
-      "command": "mkdir",
+      "command": "cmake",
       "args": [
-        "-p",
-        "${workspaceFolder}/build"
+        "--preset",
+        "linux-debug"
       ],
       "problemMatcher": []
     },
     {
-      "label": "CMake Configure",
-      "type": "shell",
-      "command": "cmake",
-      "args": [
-        "-G",
-        "Ninja",
-        "-DCMAKE_BUILD_TYPE=Debug", // <-- Ensure debug info
-        "-DCMAKE_TOOLCHAIN_FILE=${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        ".."
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/build",
-        "env": {
-          "VCPKG_ROOT": "/home/ed/vcpkg"
-        }
-      },
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": [],
-      "dependsOn": "Create Build Directory"
-    },
-    {
-      "label": "CMake Build",
+      "label": "CMake Build Debug",
       "type": "shell",
       "command": "cmake",
       "args": [
         "--build",
-        "."
+        "--preset",
+        "linux-debug"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}/build"
-      },
       "group": {
-        "kind": "build"
+        "kind": "build",
+        "isDefault": true
       },
-      "dependsOn": "CMake Configure",
-      "problemMatcher": ["$gcc"]
+      "problemMatcher": ["$gcc"],
+      "dependsOn": "CMake Configure Debug"
     },
     {
       "label": "Git Pull With Submodules",
