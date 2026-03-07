@@ -16,11 +16,17 @@
       "type": "shell",
       "command": "cmake",
       "args": [
+        "-G",
+        "Ninja",
         "-DCMAKE_BUILD_TYPE=Debug", // <-- Ensure debug info
+        "-DCMAKE_TOOLCHAIN_FILE=${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         ".."
       ],
       "options": {
-        "cwd": "${workspaceFolder}/build"
+        "cwd": "${workspaceFolder}/build",
+        "env": {
+          "VCPKG_ROOT": "/home/ed/vcpkg"
+        }
       },
       "group": {
         "kind": "build",

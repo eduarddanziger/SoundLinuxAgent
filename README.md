@@ -12,19 +12,30 @@ The Sound Agent registers audio device information on a backend server via REST 
 - **C++20 compatible compiler**
 - **CMake 3.29 or higher**
 - **Ninja build system**
+- **vcpkg** with `VCPKG_ROOT` set to your local vcpkg installation path
+- **rmqcpp** installed under `$VCPKG_ROOT/rmqcpp/install` or available via `rmqcpp_DIR`
 - **PulseAudio server**
 - **Poco and cpprestsdk packages** leverage Linux Daemon life cycle and utilize HTTP REST client code.
 
 ## Building
 
 1. Clone the repository
-2. Create a build directory and navigate into it, run CMake and compile the project:
+2. Set `VCPKG_ROOT` to your local vcpkg installation path:
 
    ```bash
-   mkdir -p build
-   cd build
-   cmake ..
-   cmake --build .
+   export VCPKG_ROOT=/path/to/vcpkg
+   ```
+
+3. Configure the project:
+
+   ```bash
+   cmake --preset linux-debug
+   ```
+
+4. Build the project:
+
+   ```bash
+   cmake --build out/build/linux-debug
    ```
 
 ## Installation

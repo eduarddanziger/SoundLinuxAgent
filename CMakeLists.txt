@@ -29,54 +29,68 @@ message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(fmt 10.2.1 REQUIRED)
 message(STATUS "Found fmt version: ${fmt_VERSION}")
 
-find_package(Poco REQUIRED Foundation Util Net)
+find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
 find_package(cpprestsdk REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(zstd CONFIG REQUIRED)
+
+option(SOUNDLINUXAGENT_ENABLE_RMQCPP "Enable RabbitMQ transport via rmqcpp" ON)
+
+set(SOUNDLINUXAGENT_HAS_RMQCPP 0)
+
+if (SOUNDLINUXAGENT_ENABLE_RMQCPP)
+  # RabbitMQ C++ SDK (rmqcpp). When building with the vcpkg toolchain, this also
+  # pulls in the Bloomberg BDE (bsl_*) headers needed by rmqcpp.
+  set(RMQCPP_ROOT "" CACHE PATH "Optional prefix where rmqcpp is installed (should contain share/rmqcpp/rmqcppConfig.cmake)")
+
+  # Prefer an explicit rmqcpp_DIR provided by the user/toolchain. If not set, try
+  # common local install locations.
+  if (NOT DEFINED rmqcpp_DIR OR rmqcpp_DIR STREQUAL "")
+    set(_rmqcpp_dir_candidates "")
+
+    if (RMQCPP_ROOT)
+      list(APPEND _rmqcpp_dir_candidates "${RMQCPP_ROOT}/share/rmqcpp")
+    endif()
+
+    if (DEFINED ENV{RMQCPP_ROOT} AND NOT "$ENV{RMQCPP_ROOT}" STREQUAL "")
+      list(APPEND _rmqcpp_dir_candidates "$ENV{RMQCPP_ROOT}/share/rmqcpp")
+    endif()
+
+    # Developer convenience: if rmqcpp is checked out and built under vcpkg root
+    # (e.g. /home/<user>/vcpkg/rmqcpp/install), use that install prefix.
+    if (DEFINED ENV{VCPKG_ROOT} AND NOT "$ENV{VCPKG_ROOT}" STREQUAL "")
+      list(APPEND _rmqcpp_dir_candidates "$ENV{VCPKG_ROOT}/rmqcpp/install/share/rmqcpp")
+    endif()
+
+    foreach(_cand IN LISTS _rmqcpp_dir_candidates)
+      if (EXISTS "${_cand}/rmqcppConfig.cmake")
+        set(rmqcpp_DIR "${_cand}" CACHE PATH "Directory containing rmqcppConfig.cmake" FORCE)
+        message(STATUS "rmqcpp_DIR auto-detected: ${rmqcpp_DIR}")
+        break()
+      endif()
+    endforeach()
+  endif()
+
+  find_package(rmqcpp CONFIG REQUIRED)
+
+  set(RMQCPP_TARGET "")
+  foreach(candidate rmqcpp::rmq rmqcpp::rmqcpp rmqcpp::rmqcpp-static rmqcpp)
+    if (TARGET ${candidate})
+      set(RMQCPP_TARGET ${candidate})
+      break()
+    endif()
+  endforeach()
+
+  if (NOT RMQCPP_TARGET)
+    message(FATAL_ERROR "rmqcpp was found, but no known imported CMake target was exported (expected e.g. rmqcpp::rmq)")
+  endif()
+
+  set(SOUNDLINUXAGENT_HAS_RMQCPP 1)
+endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SODIUM REQUIRED libsodium)
-
-# RabbitMQ (rmqa) SDK
-set(RMQA_ROOT "" CACHE PATH "Root of rmqa install (optional)")
-if (NOT RMQA_ROOT AND DEFINED ENV{RMQA_ROOT} AND NOT "$ENV{RMQA_ROOT}" STREQUAL "")
-  set(RMQA_ROOT "$ENV{RMQA_ROOT}" CACHE PATH "Root of rmqa install (optional)" FORCE)
-endif()
-
-# Some rmqcpp headers depend on Bloomberg BDE headers (e.g. <bsl_string.h>).
-# These are not necessarily installed under RMQA_ROOT/include, so allow a
-# separate deps prefix.
-set(RMQA_DEPS_ROOT "" CACHE PATH "Prefix containing rmqa dependencies (e.g. .../build/vcpkg_installed/<triplet>)")
-if (NOT RMQA_DEPS_ROOT AND RMQA_ROOT)
-  get_filename_component(_rmqa_root_abs "${RMQA_ROOT}" ABSOLUTE)
-  get_filename_component(_rmqa_root_parent "${_rmqa_root_abs}" DIRECTORY)
-  set(_rmqa_deps_guess "${_rmqa_root_parent}/build/vcpkg_installed/x64-linux")
-  if (EXISTS "${_rmqa_deps_guess}/include/bsl_string.h")
-    set(RMQA_DEPS_ROOT "${_rmqa_deps_guess}" CACHE PATH "Prefix containing rmqa dependencies (e.g. .../build/vcpkg_installed/<triplet>)" FORCE)
-  endif()
-endif()
-
-find_path(RMQA_INCLUDE_DIR
-  NAMES rmqa_rabbitcontext.h
-  HINTS "${RMQA_ROOT}"
-  PATH_SUFFIXES include
-)
-find_library(RMQA_LIBRARY
-  NAMES rmq rmqa
-  HINTS "${RMQA_ROOT}"
-  PATH_SUFFIXES lib64 lib
-)
-find_path(BDE_INCLUDE_DIR
-  NAMES bsl_string.h
-  HINTS "${RMQA_DEPS_ROOT}" "${RMQA_ROOT}"
-  PATH_SUFFIXES include
-)
-if (NOT RMQA_INCLUDE_DIR OR NOT RMQA_LIBRARY)
-  message(FATAL_ERROR "rmqa not found. Set RMQA_ROOT or install rmqa dev package.")
-endif()
-if (NOT BDE_INCLUDE_DIR)
-  message(FATAL_ERROR "bde headers not found (missing bsl_string.h). Set RMQA_DEPS_ROOT (e.g. /home/ed/vcpkg/rmqcpp/build/vcpkg_installed/x64-linux).")
-endif()
 
 add_subdirectory(SoundLib)
 
@@ -97,10 +111,18 @@ add_executable(SoundLinuxDaemon
     "ApiClient/SodiumCrypt.cpp"
     "ApiClient/AudioDeviceApiClient.cpp"
     "ApiClient/DirectHttpRequestDispatcher.cpp"
-    "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
 )
+
+if (SOUNDLINUXAGENT_HAS_RMQCPP)
+  target_sources(SoundLinuxDaemon PRIVATE
+    "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
+    "ApiClient/RequestPublisher.cpp"
+  )
+endif()
+
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
 target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
+target_compile_definitions(SoundLinuxDaemon PRIVATE SOUNDLINUXAGENT_HAS_RMQCPP=${SOUNDLINUXAGENT_HAS_RMQCPP})
 
 target_include_directories(SoundLinuxDaemon PRIVATE
     .
@@ -108,8 +130,6 @@ target_include_directories(SoundLinuxDaemon PRIVATE
     ${Poco_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}
     ${CPPREST_INCLUDE_DIRS}
-  ${RMQA_INCLUDE_DIR}
-  ${BDE_INCLUDE_DIR}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -124,8 +144,11 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     cpprestsdk::cpprest
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
-  ${RMQA_LIBRARY}
 )
+
+if (SOUNDLINUXAGENT_HAS_RMQCPP)
+  target_link_libraries(SoundLinuxDaemon PRIVATE ${RMQCPP_TARGET})
+endif()
 
 install(TARGETS SoundLinuxCli
     DESTINATION bin

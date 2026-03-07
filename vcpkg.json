@@ -1,0 +1,22 @@
+{
+  "name": "soundlinuxagent",
+  "version-string": "1.0.0",
+  "builtin-baseline": "a30ac1bd011913356d31c5c97dd836d63e9c92cf",
+  "dependencies": [
+    "bde",
+    "fmt",
+    "spdlog",
+    {
+      "name": "poco",
+      "features": [
+        "util",
+        "net"
+      ]
+    },
+    "cpprestsdk",
+    "nlohmann-json",
+    "openssl",
+    "zstd",
+    "libsodium"
+  ]
+}

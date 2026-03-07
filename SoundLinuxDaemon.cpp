@@ -16,8 +16,11 @@
 #include "ServiceObserver.h"
 
 #include "ApiClient/SodiumCrypt.h"
-#include "ApiClient/RabbitMqHttpRequestDispatcher.h"
 #include "ApiClient/DirectHttpRequestDispatcher.h"
+
+#if SOUNDLINUXAGENT_HAS_RMQCPP
+#include "ApiClient/RabbitMqHttpRequestDispatcher.h"
+#endif
 
 
 using Poco::Util::ServerApplication;
@@ -207,7 +210,14 @@ protected:
             }
             else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
             {
+#if SOUNDLINUXAGENT_HAS_RMQCPP
                 requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher());
+#else
+                throw std::runtime_error(
+                    "RabbitMQ transport selected, but this build was compiled without rmqcpp support. "
+                    "Reconfigure with -DSOUNDLINUXAGENT_ENABLE_RMQCPP=ON and provide rmqcpp_DIR/RMQCPP_ROOT."
+                );
+#endif
             }
             else // DirectHttp
             {
