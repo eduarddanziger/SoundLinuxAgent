@@ -18,8 +18,6 @@ public:
     ~ServiceObserver() override = default;
 
 public:
-    void PostAndPrintCollection() const;
-
     void OnCollectionChanged(SoundDeviceEventType event, const std::string& devicePnpId) override;
 
 private:

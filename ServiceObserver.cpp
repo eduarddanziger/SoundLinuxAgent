@@ -34,22 +34,6 @@ void ServiceObserver::PutVolumeChangeToApi(const std::string & pnpId, bool rende
 	apiClient.PutVolumeChangeToApi(pnpId, renderOrCapture, volume, hintPrefix);
 }
 
-void ServiceObserver::PostAndPrintCollection() const
-{
-    spdlog::info("Processing device collection...");
-
-    for (size_t i = 0; i < collection_.GetSize(); ++i)
-    {
-        const auto deviceSmartPtr(collection_.CreateItem(i));
-
-        spdlog::info(R"({}, "{}", {}, Volume {} / {})", deviceSmartPtr->GetPnpId(), deviceSmartPtr->GetName(),
-                     magic_enum::enum_name(deviceSmartPtr->GetFlow()), deviceSmartPtr->GetCurrentRenderVolume(),
-                     deviceSmartPtr->GetCurrentCaptureVolume());
-        PostDeviceToApi(SoundDeviceEventType::Confirmed, deviceSmartPtr.get(), "(by iteration on device collection) ");
-    }
-    spdlog::info("...Processing device collection finished.");
-}
-
 void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std::string & devicePnpId)
 {
     spdlog::info("Event caught: {}, device PnP id: {}.", magic_enum::enum_name(event), devicePnpId);
@@ -62,9 +46,10 @@ void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std:
     }
 
 	//There is no SoundDeviceEventType::Confirmed processing. "Confirmed" is sent by collection initialization only
-    if (event == SoundDeviceEventType::Discovered)
+    if (event == SoundDeviceEventType::Discovered || event == SoundDeviceEventType::Confirmed)
     {
-        PostDeviceToApi(event, soundDeviceInterface.get(), "(by device discovery) ");
+		const bool discoveredOrConfirmed = event == SoundDeviceEventType::Discovered;
+        PostDeviceToApi(event, soundDeviceInterface.get(), discoveredOrConfirmed ? "(by device discovery) " : "(by device inventory) ");
     }
     else if (event == SoundDeviceEventType::VolumeRenderChanged || event == SoundDeviceEventType::VolumeCaptureChanged)
     {
