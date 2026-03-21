@@ -52,6 +52,8 @@ In order to install SoundLinuxDaemon using the generated DEB package:
    sudo apt-get install -f
    sudo apt-get install -y libpoco-dev
    ```
+3. Install the latwest version of the RmqToRestApiForwarder (distributed via docker-compose), following the installation instructions of [rmq-to-rest-api-forwarder](https://github.com/collect-sound-devices/rmq-to-rest-api-forwarder/) repository.
+
 
 ## Starting
 
