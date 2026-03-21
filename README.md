@@ -12,19 +12,30 @@ The Sound Agent registers audio device information on a backend server via REST 
 - **C++20 compatible compiler**
 - **CMake 3.29 or higher**
 - **Ninja build system**
+- **vcpkg** with `VCPKG_ROOT` set to your local vcpkg installation path
+- **rmqcpp** installed under `$VCPKG_ROOT/rmqcpp/install` or available via `rmqcpp_DIR`
 - **PulseAudio server**
 - **Poco and cpprestsdk packages** leverage Linux Daemon life cycle and utilize HTTP REST client code.
 
 ## Building
 
 1. Clone the repository
-2. Create a build directory and navigate into it, run CMake and compile the project:
+2. Set `VCPKG_ROOT` to your local vcpkg installation path:
 
    ```bash
-   mkdir -p build
-   cd build
-   cmake ..
-   cmake --build .
+   export VCPKG_ROOT=/path/to/vcpkg
+   ```
+
+3. Configure the project:
+
+   ```bash
+   cmake --preset linux-debug
+   ```
+
+4. Build the project:
+
+   ```bash
+   cmake --build --preset linux-debug
    ```
 
 ## Installation
@@ -41,6 +52,8 @@ In order to install SoundLinuxDaemon using the generated DEB package:
    sudo apt-get install -f
    sudo apt-get install -y libpoco-dev
    ```
+3. Install the latwest version of the RmqToRestApiForwarder (distributed via docker-compose, rogether with RabbitMQ event brocker), following the installation instructions of [rmq-to-rest-api-forwarder](https://github.com/collect-sound-devices/rmq-to-rest-api-forwarder/) repository.
+
 
 ## Starting
 
@@ -50,10 +63,6 @@ In order to install SoundLinuxDaemon using the generated DEB package:
    ```
 - To stop the daemon, call kill -TERM < pid >
 - SoundLinuxDaemon can be started as console app, too. Stop it via Ctrl-C
-- SoundLinuxDaemon accepts an optional command line parameter, that can tune the URL of the backend ASP.Net Core REST API Server, e.g.:
-	```bash
-	/usr/bin/SoundLinuxDaemon --url=http://localhost:5027
-	```
 - The --help option brings a command line help screen with all available options.
 
 ## License

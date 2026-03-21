@@ -1,0 +1,4 @@
+[submodule "ApiClient"]
+	path = ApiClient
+	url = https://github.com/eduarddanziger/SoundAgentLib.git
+	branch = main

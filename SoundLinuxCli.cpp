@@ -1,4 +1,4 @@
-﻿#include "SpdLogger.h"
+﻿#include "ApiClient/common/SpdLogger.h"
 #include "cpversion.h"
 
 #include "KeyInputThread.h"
@@ -31,10 +31,13 @@ private:
     SoundDeviceCollectionInterface& collection_;
 };
 
+void SetUpLog();
 
 int main(int argc, char *argv[])
 {
-    // Check for version option
+    SetUpLog();
+
+    // Check for a version option
     for (int i = 1; i < argc; ++i)
     {
         if (std::string(argv[i]) == "--version" || std::string(argv[i]) == "-v")
@@ -46,9 +49,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        // Initialize logging
-        SpdLogSetup("SoundLinuxCli.log");
-        
+
         spdlog::info("Version {}, starting...", VERSION);
 
 		const auto collSmartPtr = SoundAgent::CreateDeviceCollection();
@@ -143,4 +144,29 @@ inline void AgentObserver::PrintCollection() const
     }
     spdlog::info("...Collection print finished.");
 }
+
+void SetUpLog()
+{
+    constexpr auto appName = "SoundLinuxCli";
+    ed::model::Logger::Inst().ConfigureAppNameAndVersion(appName, VERSION).SetOutputToConsole(true);
+    try
+    {
+        if (std::filesystem::path logFile;
+            ed::utility::AppPath::GetAndValidateLogFilePathName(
+                logFile, appName)
+        )
+        {
+            ed::model::Logger::Inst().SetPathName(logFile);
+        }
+        else
+        {
+            spdlog::warn("Log file can not be written.");
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        spdlog::warn("Logging set-up partially done; Log file can not be used: {}.", ex.what());
+    }
+}
+
 

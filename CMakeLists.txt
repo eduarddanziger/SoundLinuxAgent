@@ -29,10 +29,65 @@ message(STATUS "Found spdlog version: ${spdlog_VERSION}")
 find_package(fmt 10.2.1 REQUIRED)
 message(STATUS "Found fmt version: ${fmt_VERSION}")
 
-find_package(Poco REQUIRED Foundation Util Net)
+find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
 find_package(cpprestsdk REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(zstd CONFIG REQUIRED)
+
+option(SOUNDLINUXAGENT_ENABLE_RMQCPP "Enable RabbitMQ transport via rmqcpp" ON)
+
+set(SOUNDLINUXAGENT_HAS_RMQCPP 0)
+
+if (SOUNDLINUXAGENT_ENABLE_RMQCPP)
+  # RabbitMQ C++ SDK (rmqcpp). When building with the vcpkg toolchain, this also
+  # pulls in the Bloomberg BDE (bsl_*) headers needed by rmqcpp.
+  set(RMQCPP_ROOT "" CACHE PATH "Optional prefix where rmqcpp is installed (should contain share/rmqcpp/rmqcppConfig.cmake)")
+
+  # Prefer an explicit rmqcpp_DIR provided by the user/toolchain. If not set, try
+  # common local install locations.
+  if (NOT DEFINED rmqcpp_DIR OR rmqcpp_DIR STREQUAL "")
+    set(_rmqcpp_dir_candidates "")
+
+    if (RMQCPP_ROOT)
+      list(APPEND _rmqcpp_dir_candidates "${RMQCPP_ROOT}/share/rmqcpp")
+    endif()
+
+    if (DEFINED ENV{RMQCPP_ROOT} AND NOT "$ENV{RMQCPP_ROOT}" STREQUAL "")
+      list(APPEND _rmqcpp_dir_candidates "$ENV{RMQCPP_ROOT}/share/rmqcpp")
+    endif()
+
+    # Developer convenience: if rmqcpp is checked out and built under vcpkg root
+    # (e.g. /home/<user>/vcpkg/rmqcpp/install), use that install prefix.
+    if (DEFINED ENV{VCPKG_ROOT} AND NOT "$ENV{VCPKG_ROOT}" STREQUAL "")
+      list(APPEND _rmqcpp_dir_candidates "$ENV{VCPKG_ROOT}/rmqcpp/install/share/rmqcpp")
+    endif()
+
+    foreach(_cand IN LISTS _rmqcpp_dir_candidates)
+      if (EXISTS "${_cand}/rmqcppConfig.cmake")
+        set(rmqcpp_DIR "${_cand}" CACHE PATH "Directory containing rmqcppConfig.cmake" FORCE)
+        message(STATUS "rmqcpp_DIR auto-detected: ${rmqcpp_DIR}")
+        break()
+      endif()
+    endforeach()
+  endif()
+
+  find_package(rmqcpp CONFIG REQUIRED)
+
+  set(RMQCPP_TARGET "")
+  foreach(candidate rmqcpp::rmq rmqcpp::rmqcpp rmqcpp::rmqcpp-static rmqcpp)
+    if (TARGET ${candidate})
+      set(RMQCPP_TARGET ${candidate})
+      break()
+    endif()
+  endforeach()
+
+  if (NOT RMQCPP_TARGET)
+    message(FATAL_ERROR "rmqcpp was found, but no known imported CMake target was exported (expected e.g. rmqcpp::rmq)")
+  endif()
+
+  set(SOUNDLINUXAGENT_HAS_RMQCPP 1)
+endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SODIUM REQUIRED libsodium)
@@ -41,7 +96,7 @@ add_subdirectory(SoundLib)
 
 add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
 set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
-target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY)
+target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
 target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
 
 target_link_libraries(SoundLinuxCli PRIVATE
@@ -52,13 +107,21 @@ target_link_libraries(SoundLinuxCli PRIVATE
 
 add_executable(SoundLinuxDaemon
     "SoundLinuxDaemon.cpp"
-    "SodiumCrypt.cpp"
     "ServiceObserver.cpp"
-    "SoundRepoApiClient/AudioDeviceApiClient.cpp"
-    "SoundRepoApiClient/HttpRequestProcessor.cpp"
+    "ApiClient/SodiumCrypt.cpp"
+    "ApiClient/AudioDeviceApiClient.cpp"
 )
+
+if (SOUNDLINUXAGENT_HAS_RMQCPP)
+  target_sources(SoundLinuxDaemon PRIVATE
+    "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
+    "ApiClient/RequestPublisher.cpp"
+  )
+endif()
+
 set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
-target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY)
+target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
+target_compile_definitions(SoundLinuxDaemon PRIVATE SOUNDLINUXAGENT_HAS_RMQCPP=${SOUNDLINUXAGENT_HAS_RMQCPP})
 
 target_include_directories(SoundLinuxDaemon PRIVATE
     .
@@ -81,6 +144,10 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
 )
+
+if (SOUNDLINUXAGENT_HAS_RMQCPP)
+  target_link_libraries(SoundLinuxDaemon PRIVATE ${RMQCPP_TARGET})
+endif()
 
 install(TARGETS SoundLinuxCli
     DESTINATION bin

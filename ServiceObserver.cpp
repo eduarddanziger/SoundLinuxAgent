@@ -2,11 +2,10 @@
 
 #include <iostream>
 
-#include "SoundRepoApiClient/AudioDeviceApiClient.h"
-#include "SoundRepoApiClient/HttpRequestProcessor.h"
+#include "ApiClient/AudioDeviceApiClient.h"
+#include "ApiClient/common/StringUtils.h"
 
-#include <SpdLogger.h>
-#include "StringUtils.h"
+#include <spdlog/spdlog.h>
 #include "magic_enum/magic_enum.hpp"
 
 #include <fstream>
@@ -16,26 +15,22 @@
 #include <sys/utsname.h>
 
 ServiceObserver::ServiceObserver(SoundDeviceCollectionInterface& collection,
-                                 std::string apiBaseUrl,
-                                 std::string universalToken,
-                                 std::string codespaceName) // Added codespaceName parameter
+                                 HttpRequestDispatcherInterface& requestProcessor
+                                 )
     : collection_(collection)
-    , apiBaseUrl_(std::move(apiBaseUrl))
-    , universalToken_(std::move(universalToken))
-    , codespaceName_(std::move(codespaceName)) // Initialize new member
-    , requestProcessorSmartPtr_(std::make_shared<HttpRequestProcessor>(apiBaseUrl_, universalToken_, codespaceName_))
+    , requestProcessorInterface_(requestProcessor)
 {
 }
 
 void ServiceObserver::PostDeviceToApi(const SoundDeviceEventType messageType, const SoundDeviceInterface* devicePtr, const std::string & hintPrefix) const
 {
-    const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName, GetOperationSystemName);
+    const AudioDeviceApiClient apiClient(requestProcessorInterface_, GetHostName, GetOperationSystemName);
     apiClient.PostDeviceToApi(messageType, devicePtr, hintPrefix);
 }
 
 void ServiceObserver::PutVolumeChangeToApi(const std::string & pnpId, bool renderOrCapture, uint16_t volume, const std::string & hintPrefix) const
 {
-	const AudioDeviceApiClient apiClient(requestProcessorSmartPtr_, GetHostName, GetOperationSystemName);
+	const AudioDeviceApiClient apiClient(requestProcessorInterface_, GetHostName, GetOperationSystemName);
 	apiClient.PutVolumeChangeToApi(pnpId, renderOrCapture, volume, hintPrefix);
 }
 
@@ -43,19 +38,21 @@ void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std:
 {
     spdlog::info("Event caught: {}, device PnP id: {}.", magic_enum::enum_name(event), devicePnpId);
 
-    if (event == SoundDeviceEventType::Confirmed)
+    const auto soundDeviceInterface = collection_.CreateItem(devicePnpId);
+    if (!soundDeviceInterface)
     {
-        const auto soundDeviceInterface = collection_.CreateItem(devicePnpId);
-        PostDeviceToApi(event, soundDeviceInterface.get(), "(by device info requesting) ");
+        spdlog::warn("Sound device with PnP id cannot be initialized.", devicePnpId);
+        return;
     }
-    else if (event == SoundDeviceEventType::Discovered)
+
+	//There is no SoundDeviceEventType::Confirmed processing. "Confirmed" is sent by collection initialization only
+    if (event == SoundDeviceEventType::Discovered || event == SoundDeviceEventType::Confirmed)
     {
-        const auto soundDeviceInterface = collection_.CreateItem(devicePnpId);
-        PostDeviceToApi(event, soundDeviceInterface.get(), "(by device discovery) ");
+		const bool discoveredOrConfirmed = event == SoundDeviceEventType::Discovered;
+        PostDeviceToApi(event, soundDeviceInterface.get(), discoveredOrConfirmed ? "(by device discovery) " : "(by device inventory) ");
     }
     else if (event == SoundDeviceEventType::VolumeRenderChanged || event == SoundDeviceEventType::VolumeCaptureChanged)
     {
-        const auto soundDeviceInterface = collection_.CreateItem(devicePnpId);
 		const bool renderOrCapture = event == SoundDeviceEventType::VolumeRenderChanged;
         PutVolumeChangeToApi(devicePnpId, renderOrCapture, renderOrCapture ? soundDeviceInterface->GetCurrentRenderVolume() : soundDeviceInterface->GetCurrentCaptureVolume());
     }
@@ -66,7 +63,8 @@ void ServiceObserver::OnCollectionChanged(SoundDeviceEventType event, const std:
     else
 	{
         spdlog::warn("Unexpected event type: {}", static_cast<int>(event));
-    }
+	}
+
 }
 
 std::string ServiceObserver::GetHostName()

@@ -1,10 +1,13 @@
-#include "SpdLogger.h"
+#include "ApiClient/common/SpdLogger.h"
 
 #include <Poco/Util/ServerApplication.h>
 #include <Poco/Util/Option.h>
 #include <Poco/Util/OptionSet.h>
 #include <Poco/Util/HelpFormatter.h>
 #include <Poco/Task.h>
+#include <Poco/UnicodeConverter.h>
+#include <Poco/String.h>
+
 #include <iostream>
 #include <csignal>
 #include <atomic>
@@ -12,7 +15,12 @@
 #include "cpversion.h"
 #include "ServiceObserver.h"
 
-#include "SodiumCrypt.h"
+#include "ApiClient/SodiumCrypt.h"
+
+#if SOUNDLINUXAGENT_HAS_RMQCPP
+#include "ApiClient/RabbitMqHttpRequestDispatcher.h"
+#endif
+
 
 using Poco::Util::ServerApplication;
 using Poco::Util::Application;
@@ -31,7 +39,7 @@ protected:
     }
 
     static void SetupSignalHandlers(
-        std::function<void()> deactivateCallback
+        const std::function<void()> & deactivateCallback
     )
     {
         deactivateCallback_ = deactivateCallback;
@@ -44,28 +52,63 @@ protected:
         loadConfiguration();
         ServerApplication::initialize(self);
 
-        SpdLogSetup("SoundLinuxDaemon.log");
+        SetUpLog();
 
-        if (apiBaseUrl_.empty())
-        {
-            apiBaseUrl_ = ReadStringConfigProperty(API_BASE_URL_PROPERTY_KEY);
+        if (transportMethod_.empty())
+        {   // If no transport method is provided via command line, read it from the configuration
+            spdlog::info("Transport method not provided via command line. Reading from configuration...");
+            transportMethod_ = ReadOptionalSimpleConfigProperty(API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY, API_TRANSPORT_METHOD_VALUE00_NONE);
         }
-        apiBaseUrl_ += "/api/AudioDevices";
 
-        universalToken_ = ReadStringConfigProperty(UNIVERSAL_TOKEN_PROPERTY_KEY);
-        codespaceName_ = ReadStringConfigProperty(CODESPACE_NAME_PROPERTY_KEY);
+        if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE) != 0
+            && Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) != 0
+        )
+        {
+            spdlog::info(R"(Invalid transport method "{}". Using default: "{}".)", transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE);
+            transportMethod_ = API_TRANSPORT_METHOD_VALUE00_NONE;
+        }
+        else
+        {
+            spdlog::info(R"(Transport method value "{}" validated.)", transportMethod_);
+        }
     }
+
+    static void SetUpLog()
+    {
+        constexpr auto appName = "SoundLinuxDaemon";
+        ed::model::Logger::Inst().ConfigureAppNameAndVersion(appName, VERSION).SetOutputToConsole(true);
+        try
+        {
+            if (std::filesystem::path logFile;
+                ed::utility::AppPath::GetAndValidateLogFilePathName(
+                    logFile, appName)
+            )
+            {
+                ed::model::Logger::Inst().SetPathName(logFile);
+            }
+            else
+            {
+                spdlog::warn("Log file can not be written.");
+            }
+        }
+        catch (const std::exception& ex)
+        {
+            spdlog::warn("Logging set-up partially done; Log file can not be used: {}.", ex.what());
+        }
+    }
+
+
 
     void defineOptions(OptionSet& options) override
     {
         ServerApplication::defineOptions(options);
 
         options.addOption(
-            Poco::Util::Option("url", "u", "Base Server URL, e.g. http://localhost:5027")
+            Poco::Util::Option("transport", "", "Transport method: None or RabbitMQ")
             .required(false)
             .repeatable(false)
-            .argument("<url>", true)
-            .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleUrl)));
+            .argument("<transport>", true)
+            .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleTransport)));
 
         options.addOption(
             Option("help", "h", "Help information")
@@ -81,10 +124,11 @@ protected:
 
     }
 
-    void HandleUrl(const std::string&, const std::string& value)
+    void HandleTransport(const std::string& name, const std::string& value)
     {
-        std::cout << "Got Server URL " << value << "\n";
-        apiBaseUrl_ = value;
+        std::cout << fmt::format(R"(Got Transport Method "{}"
+)", value);
+        transportMethod_ = value;
     }
 
     void HandleHelp(const std::string&, const std::string&)
@@ -96,19 +140,21 @@ protected:
         helpFormatter.setFooter("\n");
         helpFormatter.format(std::cout);
         stopOptionsProcessing();
-        helpRequested_ = true;    }
+        onlyConsoleOutputRequested_ = true;
+    }
 
     void handleVersion(const std::string& , const std::string&)
     {
         std::cout << "Version " << VERSION << "\n";
         stopOptionsProcessing();
-        helpRequested_ = true;
+        onlyConsoleOutputRequested_ = true;
     }
 
     int main(const std::vector<std::string>&) override
     {
-        if (helpRequested_)
+        if (onlyConsoleOutputRequested_)
             return Application::EXIT_OK;
+
         try
         {
             spdlog::info("Sound Linux Daemon {} started", VERSION); 
@@ -119,9 +165,39 @@ protected:
                 throw std::runtime_error("Failed to create device collection");
             }
             auto& collection = *deviceCollectionSmartPtr;
+
+            std::unique_ptr<HttpRequestDispatcherInterface> requestDispatcherSmartPtr;
+
+            if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE) == 0)
+            {
+                class EmptyDispatcher : public HttpRequestDispatcherInterface
+                {
+                public:
+                    void EnqueueRequest(bool, const std::chrono::system_clock::time_point&,
+                                        const std::string&, const std::string&,
+                                        const std::unordered_map<std::string, std::string>&, const std::string&
+                    ) override
+                    {
+                        spdlog::info("Enqueueing ignored, because the transport method is \"{}\"",
+                                     API_TRANSPORT_METHOD_VALUE00_NONE);
+                    }
+                };
+                requestDispatcherSmartPtr.reset(new EmptyDispatcher());
+            }
+            else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
+            {
+#if SOUNDLINUXAGENT_HAS_RMQCPP
+                requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher());
+#else
+                throw std::runtime_error(
+                    "RabbitMQ transport selected, but this build was compiled without rmqcpp support. "
+                    "Reconfigure with -DSOUNDLINUXAGENT_ENABLE_RMQCPP=ON and provide rmqcpp_DIR/RMQCPP_ROOT."
+                );
+#endif
+            }
             
 //            AgentObserver subscriber(collection);
-            ServiceObserver subscriber(collection, apiBaseUrl_, universalToken_, codespaceName_);
+            ServiceObserver subscriber(collection, *requestDispatcherSmartPtr);
 
             collection.Subscribe(subscriber);
 
@@ -146,6 +222,18 @@ protected:
         }
         spdlog::info("...Version {}, ended successfully...", VERSION);
         return Application::EXIT_OK;
+    }
+
+    [[nodiscard]] std::string ReadOptionalSimpleConfigProperty(const std::string& propertyName,
+                                                               const std::string& defaultValue = "") const
+    {
+        if (!config().hasProperty(propertyName))
+        {
+            spdlog::info(R"(Property "{}" not found in configuration. Using default value: "{}".)", propertyName, defaultValue);
+            return defaultValue;
+        }
+
+        return ReadStringConfigProperty(propertyName);
     }
 
     [[nodiscard]] std::string ReadStringConfigProperty(const std::string& propertyName) const
@@ -176,15 +264,18 @@ protected:
     }
 
 private:
-    bool helpRequested_ = false;
+    bool onlyConsoleOutputRequested_ = false;
+    
+    std::string transportMethod_;
 
     std::string apiBaseUrl_;
     std::string universalToken_;
     std::string codespaceName_;
 
-    static constexpr auto API_BASE_URL_PROPERTY_KEY = "custom.apiBaseUrl";
-    static constexpr auto UNIVERSAL_TOKEN_PROPERTY_KEY = "custom.universalToken";
-    static constexpr auto CODESPACE_NAME_PROPERTY_KEY = "custom.codespaceName";
+    static constexpr auto API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
+    static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
+    static constexpr auto API_TRANSPORT_METHOD_VALUE02_RABBITMQ = "RabbitMQ";
+    
 };
 
 std::function<void()> SoundLinuxDaemon::deactivateCallback_{nullptr};

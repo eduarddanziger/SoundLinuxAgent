@@ -3,8 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <string_view>
 
-#include "ClassDefHelper.h"
-
+#include "../ApiClient/common/ClassDefHelper.h"
 
 
 // RAII-style class that logs entry and exit automatically
