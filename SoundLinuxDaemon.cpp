@@ -16,7 +16,6 @@
 #include "ServiceObserver.h"
 
 #include "ApiClient/SodiumCrypt.h"
-#include "ApiClient/DirectHttpRequestDispatcher.h"
 
 #if SOUNDLINUXAGENT_HAS_RMQCPP
 #include "ApiClient/RabbitMqHttpRequestDispatcher.h"
@@ -62,7 +61,6 @@ protected:
         }
 
         if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE) != 0
-            && Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE01_DIRECTHTTP) != 0
             && Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) != 0
         )
         {
@@ -73,16 +71,6 @@ protected:
         {
             spdlog::info(R"(Transport method value "{}" validated.)", transportMethod_);
         }
-
-
-        if (apiBaseUrl_.empty())
-        {
-            apiBaseUrl_ = ReadStringConfigProperty(API_BASE_URL_PROPERTY_KEY);
-        }
-        apiBaseUrl_ += "/api/AudioDevices";
-
-        universalToken_ = ReadStringConfigProperty(UNIVERSAL_TOKEN_PROPERTY_KEY);
-        codespaceName_ = ReadStringConfigProperty(CODESPACE_NAME_PROPERTY_KEY);
     }
 
     static void SetUpLog()
@@ -121,12 +109,6 @@ protected:
             .repeatable(false)
             .argument("<transport>", true)
             .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleTransport)));
-        options.addOption(
-            Poco::Util::Option("url", "u", "Base Server URL, e.g. http://localhost:5027")
-            .required(false)
-            .repeatable(false)
-            .argument("<url>", true)
-            .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleUrl)));
 
         options.addOption(
             Option("help", "h", "Help information")
@@ -140,12 +122,6 @@ protected:
             .repeatable(false)
             .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::handleVersion)));
 
-    }
-
-    void HandleUrl(const std::string&, const std::string& value)
-    {
-        std::cout << "Got Server URL " << value << "\n";
-        apiBaseUrl_ = value;
     }
 
     void HandleTransport(const std::string& name, const std::string& value)
@@ -218,10 +194,6 @@ protected:
                     "Reconfigure with -DSOUNDLINUXAGENT_ENABLE_RMQCPP=ON and provide rmqcpp_DIR/RMQCPP_ROOT."
                 );
 #endif
-            }
-            else // DirectHttp
-            {
-                requestDispatcherSmartPtr.reset(new DirectHttpRequestDispatcher(apiBaseUrl_, universalToken_, codespaceName_));
             }
             
 //            AgentObserver subscriber(collection);
@@ -302,13 +274,8 @@ private:
 
     static constexpr auto API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
     static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
-    static constexpr auto API_TRANSPORT_METHOD_VALUE01_DIRECTHTTP = "DirectHttp";
     static constexpr auto API_TRANSPORT_METHOD_VALUE02_RABBITMQ = "RabbitMQ";
     
-    static constexpr auto API_BASE_URL_PROPERTY_KEY = "custom.apiBaseUrl";
-    static constexpr auto UNIVERSAL_TOKEN_PROPERTY_KEY = "custom.universalToken";
-    static constexpr auto CODESPACE_NAME_PROPERTY_KEY = "custom.codespaceName";
-   
 };
 
 std::function<void()> SoundLinuxDaemon::deactivateCallback_{nullptr};

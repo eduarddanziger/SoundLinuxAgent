@@ -63,10 +63,6 @@ In order to install SoundLinuxDaemon using the generated DEB package:
    ```
 - To stop the daemon, call kill -TERM < pid >
 - SoundLinuxDaemon can be started as console app, too. Stop it via Ctrl-C
-- SoundLinuxDaemon accepts an optional command line parameter, that can tune the URL of the backend ASP.Net Core REST API Server, e.g.:
-	```bash
-	/usr/bin/SoundLinuxDaemon --url=http://localhost:5027
-	```
 - The --help option brings a command line help screen with all available options.
 
 ## License
