@@ -13,7 +13,6 @@
         "net"
       ]
     },
-    "cpprestsdk",
     "nlohmann-json",
     "openssl",
     "zstd",

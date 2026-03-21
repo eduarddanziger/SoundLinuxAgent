@@ -110,7 +110,6 @@ add_executable(SoundLinuxDaemon
     "ServiceObserver.cpp"
     "ApiClient/SodiumCrypt.cpp"
     "ApiClient/AudioDeviceApiClient.cpp"
-    "ApiClient/DirectHttpRequestDispatcher.cpp"
 )
 
 if (SOUNDLINUXAGENT_HAS_RMQCPP)

@@ -3,7 +3,6 @@
 #include "public/SoundAgentInterface.h"
 
 class HttpRequestDispatcherInterface;
-class DirectHttpRequestDispatcher;
 
 class ServiceObserver final : public SoundDeviceObserverInterface {
 public:
