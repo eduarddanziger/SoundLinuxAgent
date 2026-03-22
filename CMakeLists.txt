@@ -32,7 +32,6 @@ message(STATUS "Found fmt version: ${fmt_VERSION}")
 find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(zstd CONFIG REQUIRED)
 
 option(SOUNDLINUXAGENT_ENABLE_RMQCPP "Enable RabbitMQ transport via rmqcpp" ON)
 
