@@ -76,6 +76,13 @@ In order to install LinuxSoundScanner using the generated DEB package:
 - LinuxSoundScanner can be started as console app, too. Stop it via Ctrl-C
 - The --help option brings a command line help screen with all available options.
 
+## Changelog
+
+- 2026-03-22 Sent confirm events.
+- 2026-03-22 Renamed the main executable to LinuxSoundScanner.
+- 2026-03-07 Simplified CMake presets and build steps.
+- 2025-04-23 Split the build into CLI and daemon targets with DEB packages.
+
 ## License
 
 This project is licensed under the terms of the [MIT License](LICENSE).
