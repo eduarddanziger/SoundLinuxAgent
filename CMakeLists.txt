@@ -32,7 +32,6 @@ message(STATUS "Found fmt version: ${fmt_VERSION}")
 find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(zstd CONFIG REQUIRED)
 
 option(SOUNDLINUXAGENT_ENABLE_RMQCPP "Enable RabbitMQ transport via rmqcpp" ON)
 
@@ -61,7 +60,6 @@ if (SOUNDLINUXAGENT_ENABLE_RMQCPP)
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(SODIUM REQUIRED libsodium)
 
 add_subdirectory(SoundLib)
 
@@ -76,59 +74,56 @@ target_link_libraries(SoundLinuxCli PRIVATE
     SoundLib
 )
 
-add_executable(SoundLinuxDaemon
-    "SoundLinuxDaemon.cpp"
+add_executable(LinuxSoundScanner
+    "LinuxSoundScanner.cpp"
     "ServiceObserver.cpp"
-    "ApiClient/SodiumCrypt.cpp"
     "ApiClient/AudioDeviceApiClient.cpp"
 )
 
 if (SOUNDLINUXAGENT_HAS_RMQCPP)
-  target_sources(SoundLinuxDaemon PRIVATE
+  target_sources(LinuxSoundScanner PRIVATE
     "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
     "ApiClient/RequestPublisher.cpp"
   )
 endif()
 
-set_property(TARGET SoundLinuxDaemon PROPERTY CXX_STANDARD 20)
-target_compile_definitions(SoundLinuxDaemon PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
-target_compile_definitions(SoundLinuxDaemon PRIVATE SOUNDLINUXAGENT_HAS_RMQCPP=${SOUNDLINUXAGENT_HAS_RMQCPP})
+set_property(TARGET LinuxSoundScanner PROPERTY CXX_STANDARD 20)
+target_compile_definitions(LinuxSoundScanner PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
+target_compile_definitions(LinuxSoundScanner PRIVATE SOUNDLINUXAGENT_HAS_RMQCPP=${SOUNDLINUXAGENT_HAS_RMQCPP})
 
-target_include_directories(SoundLinuxDaemon PRIVATE
+target_include_directories(LinuxSoundScanner PRIVATE
     .
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
-    ${SODIUM_INCLUDE_DIRS}
 )
 
-# Link libraries to SoundLinuxDaemon
-target_link_libraries(SoundLinuxDaemon PRIVATE
+# Link libraries to LinuxSoundScanner
+target_link_libraries(LinuxSoundScanner PRIVATE
     spdlog::spdlog_header_only
     fmt::fmt
     SoundLib
     Poco::Foundation
     Poco::Util
     Poco::Net
-    ${SODIUM_LIBRARIES}
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
 )
 
 if (SOUNDLINUXAGENT_HAS_RMQCPP)
-  target_link_libraries(SoundLinuxDaemon PRIVATE ${RMQCPP_TARGET})
+  target_link_libraries(LinuxSoundScanner PRIVATE ${RMQCPP_TARGET})
 endif()
 
 install(TARGETS SoundLinuxCli
     DESTINATION bin
     COMPONENT SoundLinuxCli)
 
-install(TARGETS SoundLinuxDaemon
+install(TARGETS LinuxSoundScanner
     DESTINATION bin
-    COMPONENT SoundLinuxDaemon)
+    COMPONENT LinuxSoundScanner)
 
-install(FILES SoundLinuxDaemon.xml
+install(FILES LinuxSoundScanner.xml
   DESTINATION bin
-  COMPONENT SoundLinuxDaemon)
+  COMPONENT LinuxSoundScanner)
 
 # The package name and version
 set(CPACK_PACKAGE_NAME "SoundLinuxAgent")
@@ -147,14 +142,14 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
 
-set(CPACK_COMPONENTS_ALL SoundLinuxCli SoundLinuxDaemon)
+set(CPACK_COMPONENTS_ALL SoundLinuxCli LinuxSoundScanner)
 
 if(UNIX AND NOT APPLE)
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
   set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
-  set(CPACK_DEBIAN_SOUNDLINUXDAEMON_PACKAGE_NAME "SoundLinuxDaemon")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23, libssl3")
+  set(CPACK_DEBIAN_LINUXSOUNDSCANNER_PACKAGE_NAME "LinuxSoundScanner")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libssl3")
 endif()
 
 # Specify the installation directory
@@ -164,7 +159,7 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "SoundLinuxAgent")
 include(CPack)
 
 add_custom_command(
-    TARGET SoundLinuxCli SoundLinuxDaemon POST_BUILD
+    TARGET SoundLinuxCli LinuxSoundScanner POST_BUILD
     COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
     COMMENT "Generating DEB package"
 )

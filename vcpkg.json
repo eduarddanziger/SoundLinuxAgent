@@ -15,8 +15,6 @@
       ]
     },
     "nlohmann-json",
-    "openssl",
-    "zstd",
-    "libsodium"
+    "openssl"
   ]
 }

@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug SoundLinuxDaemon",
+      "name": "Debug LinuxSoundScanner",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/out/build/linux-debug/SoundLinuxDaemon",
+      "program": "${workspaceFolder}/out/build/linux-debug/LinuxSoundScanner",
       "args": [
 //        "-url=http://192.168.0.164:5027"
       ],
