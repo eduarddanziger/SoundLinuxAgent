@@ -16,8 +16,8 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 - **C++20 compatible compiler**
 - **CMake 3.29 or higher**
 - **Ninja build system**
-- **vcpkg** with `VCPKG_ROOT` set to your local vcpkg installation path
-- **rmqcpp** provided by the repo's vcpkg manifest
+- **vcpkg** package manager
+- **rmqcpp** for publishing at RabbitMQ
 - **PulseAudio server**
 - **Poco package** leverages Linux executable life cycle code.
 
