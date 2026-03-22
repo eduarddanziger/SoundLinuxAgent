@@ -15,8 +15,6 @@
 #include "cpversion.h"
 #include "ServiceObserver.h"
 
-#include "ApiClient/SodiumCrypt.h"
-
 #if SOUNDLINUXAGENT_HAS_RMQCPP
 #include "ApiClient/RabbitMqHttpRequestDispatcher.h"
 #endif
@@ -246,20 +244,6 @@ protected:
         }
 
         auto returnValue = config().getString(propertyName);
-        try
-        {
-            returnValue = SodiumDecrypt(returnValue, "32-characters-long-secure-key-12");
-        }
-        catch (const std::exception& ex)  // NOLINT(bugprone-empty-catch)
-        {
-            spdlog::info("Decryption doesn't work: {}.", ex.what());
-        }
-        catch (...)
-        {
-            spdlog::error("Unknown error. Propagating...");
-            throw;
-        }
-
         return returnValue;
     }
 

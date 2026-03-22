@@ -61,7 +61,6 @@ if (SOUNDLINUXAGENT_ENABLE_RMQCPP)
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(SODIUM REQUIRED libsodium)
 
 add_subdirectory(SoundLib)
 
@@ -79,7 +78,6 @@ target_link_libraries(SoundLinuxCli PRIVATE
 add_executable(SoundLinuxDaemon
     "SoundLinuxDaemon.cpp"
     "ServiceObserver.cpp"
-    "ApiClient/SodiumCrypt.cpp"
     "ApiClient/AudioDeviceApiClient.cpp"
 )
 
@@ -98,7 +96,6 @@ target_include_directories(SoundLinuxDaemon PRIVATE
     .
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
-    ${SODIUM_INCLUDE_DIRS}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -109,7 +106,6 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     Poco::Foundation
     Poco::Util
     Poco::Net
-    ${SODIUM_LIBRARIES}
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
 )
@@ -154,7 +150,7 @@ if(UNIX AND NOT APPLE)
   set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
   set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
   set(CPACK_DEBIAN_SOUNDLINUXDAEMON_PACKAGE_NAME "SoundLinuxDaemon")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23, libssl3")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libssl3")
 endif()
 
 # Specify the installation directory
