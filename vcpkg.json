@@ -4,6 +4,7 @@
   "builtin-baseline": "a30ac1bd011913356d31c5c97dd836d63e9c92cf",
   "dependencies": [
     "bde",
+    "rmqcpp",
     "fmt",
     "spdlog",
     {
