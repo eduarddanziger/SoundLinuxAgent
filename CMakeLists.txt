@@ -33,16 +33,6 @@ find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-if (VCPKG_MANIFEST_MODE AND DEFINED rmqcpp_DIR)
-  get_filename_component(_rmqcpp_manifest_dir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/rmqcpp" ABSOLUTE)
-  get_filename_component(_rmqcpp_cached_dir "${rmqcpp_DIR}" ABSOLUTE)
-
-  if (NOT _rmqcpp_cached_dir STREQUAL _rmqcpp_manifest_dir)
-    message(STATUS "Clearing legacy rmqcpp_DIR cache entry so manifest mode can use ${_rmqcpp_manifest_dir}")
-    unset(rmqcpp_DIR CACHE)
-  endif()
-endif()
-
 # rmqcpp is provided by the vcpkg manifest for this repo.
 find_package(rmqcpp CONFIG REQUIRED)
 
