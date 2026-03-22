@@ -9,7 +9,7 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/) with a React / TypeScript frontend [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/), see [Primary Web Client](https://list-audio-react-app.vercel.app) application.
 
 ## Executables Generated
-- **SoundLinuxDaemon**: Linux Daemon collects audio device information and sends it to a remote server.
+- **LinuxSoundScanner**: Linux Daemon collects audio device information and sends it to a remote server.
 - **SoundLinuxCli**: Command-line test CLI.
 
 ## Used Technologies and Requirements
@@ -51,11 +51,11 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 
 ## Installation
 
-In order to install SoundLinuxDaemon using the generated DEB package:
+In order to install LinuxSoundScanner using the generated DEB package:
 
 1. Install a DEB-package from latest GitHub-Release, [here](https://github.com/eduarddanziger/SoundLinuxAgent/releases/latest).
    ```bash
-   sudo dpkg -i SoundLinuxAgent-x.x.x-Linux-SoundLinuxDaemon.deb
+   sudo dpkg -i SoundLinuxAgent-x.x.x-Linux-LinuxSoundScanner.deb
    ```
 2. If there are missing dependencies, fix them by running:
 
@@ -70,10 +70,10 @@ In order to install SoundLinuxDaemon using the generated DEB package:
 
 - Start it as a daemon or put the following command into your systemd service file:
    ```bash
-   /usr/bin/SoundLinuxDaemon --daemon --pid-file=/tmp/SoundLinuxDaemon.pid
+   /usr/bin/LinuxSoundScanner --daemon --pid-file=/tmp/LinuxSoundScanner.pid
    ```
 - To stop the daemon, call kill -TERM < pid >
-- SoundLinuxDaemon can be started as console app, too. Stop it via Ctrl-C
+- LinuxSoundScanner can be started as console app, too. Stop it via Ctrl-C
 - The --help option brings a command line help screen with all available options.
 
 ## License
