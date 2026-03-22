@@ -30,7 +30,6 @@ find_package(fmt 10.2.1 REQUIRED)
 message(STATUS "Found fmt version: ${fmt_VERSION}")
 
 find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
-find_package(cpprestsdk REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -128,7 +127,6 @@ target_include_directories(SoundLinuxDaemon PRIVATE
     ${CMAKE_BINARY_DIR}
     ${Poco_INCLUDE_DIRS}
     ${SODIUM_INCLUDE_DIRS}
-    ${CPPREST_INCLUDE_DIRS}
 )
 
 # Link libraries to SoundLinuxDaemon
@@ -140,7 +138,6 @@ target_link_libraries(SoundLinuxDaemon PRIVATE
     Poco::Util
     Poco::Net
     ${SODIUM_LIBRARIES}
-    cpprestsdk::cpprest
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
 )
@@ -185,7 +182,7 @@ if(UNIX AND NOT APPLE)
   set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
   set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
   set(CPACK_DEBIAN_SOUNDLINUXDAEMON_PACKAGE_NAME "SoundLinuxDaemon")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23, libcpprest, libssl3")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libsodium23, libssl3")
 endif()
 
 # Specify the installation directory
