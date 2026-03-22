@@ -191,7 +191,7 @@ protected:
 #else
                 throw std::runtime_error(
                     "RabbitMQ transport selected, but this build was compiled without rmqcpp support. "
-                    "Reconfigure with -DSOUNDLINUXAGENT_ENABLE_RMQCPP=ON and provide rmqcpp_DIR/RMQCPP_ROOT."
+                    "Reconfigure with -DSOUNDLINUXAGENT_ENABLE_RMQCPP=ON so the vcpkg manifest installs rmqcpp."
                 );
 #endif
             }

@@ -13,7 +13,7 @@ The Sound Agent registers audio device information on a backend server via REST 
 - **CMake 3.29 or higher**
 - **Ninja build system**
 - **vcpkg** with `VCPKG_ROOT` set to your local vcpkg installation path
-- **rmqcpp** installed under `$VCPKG_ROOT/rmqcpp/install` or available via `rmqcpp_DIR`
+- **rmqcpp** provided by the repo's vcpkg manifest
 - **PulseAudio server**
 - **Poco and cpprestsdk packages** leverage Linux Daemon life cycle and utilize HTTP REST client code.
 
@@ -25,6 +25,8 @@ The Sound Agent registers audio device information on a backend server via REST 
    ```bash
    export VCPKG_ROOT=/path/to/vcpkg
    ```
+
+   The repository ships a local overlay port for `rmqcpp` under `vcpkg-ports/`, so the manifest build does not depend on a separately installed `rmqcpp` tree.
 
 3. Configure the project:
 

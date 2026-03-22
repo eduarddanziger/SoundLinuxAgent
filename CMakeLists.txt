@@ -39,52 +39,24 @@ option(SOUNDLINUXAGENT_ENABLE_RMQCPP "Enable RabbitMQ transport via rmqcpp" ON)
 set(SOUNDLINUXAGENT_HAS_RMQCPP 0)
 
 if (SOUNDLINUXAGENT_ENABLE_RMQCPP)
-  # RabbitMQ C++ SDK (rmqcpp). When building with the vcpkg toolchain, this also
-  # pulls in the Bloomberg BDE (bsl_*) headers needed by rmqcpp.
-  set(RMQCPP_ROOT "" CACHE PATH "Optional prefix where rmqcpp is installed (should contain share/rmqcpp/rmqcppConfig.cmake)")
+  if (VCPKG_MANIFEST_MODE AND DEFINED rmqcpp_DIR)
+    get_filename_component(_rmqcpp_manifest_dir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/rmqcpp" ABSOLUTE)
+    get_filename_component(_rmqcpp_cached_dir "${rmqcpp_DIR}" ABSOLUTE)
 
-  # Prefer an explicit rmqcpp_DIR provided by the user/toolchain. If not set, try
-  # common local install locations.
-  if (NOT DEFINED rmqcpp_DIR OR rmqcpp_DIR STREQUAL "")
-    set(_rmqcpp_dir_candidates "")
-
-    if (RMQCPP_ROOT)
-      list(APPEND _rmqcpp_dir_candidates "${RMQCPP_ROOT}/share/rmqcpp")
+    if (NOT _rmqcpp_cached_dir STREQUAL _rmqcpp_manifest_dir)
+      message(STATUS "Clearing legacy rmqcpp_DIR cache entry so manifest mode can use ${_rmqcpp_manifest_dir}")
+      unset(rmqcpp_DIR CACHE)
     endif()
-
-    if (DEFINED ENV{RMQCPP_ROOT} AND NOT "$ENV{RMQCPP_ROOT}" STREQUAL "")
-      list(APPEND _rmqcpp_dir_candidates "$ENV{RMQCPP_ROOT}/share/rmqcpp")
-    endif()
-
-    # Developer convenience: if rmqcpp is checked out and built under vcpkg root
-    # (e.g. /home/<user>/vcpkg/rmqcpp/install), use that install prefix.
-    if (DEFINED ENV{VCPKG_ROOT} AND NOT "$ENV{VCPKG_ROOT}" STREQUAL "")
-      list(APPEND _rmqcpp_dir_candidates "$ENV{VCPKG_ROOT}/rmqcpp/install/share/rmqcpp")
-    endif()
-
-    foreach(_cand IN LISTS _rmqcpp_dir_candidates)
-      if (EXISTS "${_cand}/rmqcppConfig.cmake")
-        set(rmqcpp_DIR "${_cand}" CACHE PATH "Directory containing rmqcppConfig.cmake" FORCE)
-        message(STATUS "rmqcpp_DIR auto-detected: ${rmqcpp_DIR}")
-        break()
-      endif()
-    endforeach()
   endif()
 
+  # rmqcpp is provided by the vcpkg manifest for this repo.
   find_package(rmqcpp CONFIG REQUIRED)
 
-  set(RMQCPP_TARGET "")
-  foreach(candidate rmqcpp::rmq rmqcpp::rmqcpp rmqcpp::rmqcpp-static rmqcpp)
-    if (TARGET ${candidate})
-      set(RMQCPP_TARGET ${candidate})
-      break()
-    endif()
-  endforeach()
-
-  if (NOT RMQCPP_TARGET)
-    message(FATAL_ERROR "rmqcpp was found, but no known imported CMake target was exported (expected e.g. rmqcpp::rmq)")
+  if (NOT TARGET rmqcpp::rmq)
+    message(FATAL_ERROR "rmqcpp was found, but the expected imported target rmqcpp::rmq was not exported")
   endif()
 
+  set(RMQCPP_TARGET rmqcpp::rmq)
   set(SOUNDLINUXAGENT_HAS_RMQCPP 1)
 endif()
 
