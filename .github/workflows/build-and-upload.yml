@@ -61,13 +61,12 @@ jobs:
         # Get the distance since the latest tag
         DISTANCE=$(git rev-list --count "$LATEST_TAG"..HEAD)
         echo "DISTANCE: $DISTANCE"
-        # Append -RC<distance> and increment third version number if distance is greater than 0
+        # Append -rc.<distance> and increment third version number if distance is greater than 0
         if [ "$DISTANCE" -gt 0 ]; then
           # Increment the third number
           VERSION_NUMBER=$(echo "$VERSION_NUMBER" | awk -F. -v OFS=. '{$3++; print}')
           # Add RC info
-          DISTANCE=$(printf "%03d" "$DISTANCE")
-          VERSION="$VERSION_NUMBER-RC$DISTANCE"
+          VERSION="$VERSION_NUMBER-rc.$DISTANCE"
         else
           VERSION="$VERSION_NUMBER"
         fi
