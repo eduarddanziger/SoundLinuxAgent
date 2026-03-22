@@ -33,30 +33,11 @@ find_package(Poco REQUIRED COMPONENTS Foundation Util Net)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-option(SOUNDLINUXAGENT_ENABLE_RMQCPP "Enable RabbitMQ transport via rmqcpp" ON)
+# rmqcpp is provided by the vcpkg manifest for this repo.
+find_package(rmqcpp CONFIG REQUIRED)
 
-set(SOUNDLINUXAGENT_HAS_RMQCPP 0)
-
-if (SOUNDLINUXAGENT_ENABLE_RMQCPP)
-  if (VCPKG_MANIFEST_MODE AND DEFINED rmqcpp_DIR)
-    get_filename_component(_rmqcpp_manifest_dir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/rmqcpp" ABSOLUTE)
-    get_filename_component(_rmqcpp_cached_dir "${rmqcpp_DIR}" ABSOLUTE)
-
-    if (NOT _rmqcpp_cached_dir STREQUAL _rmqcpp_manifest_dir)
-      message(STATUS "Clearing legacy rmqcpp_DIR cache entry so manifest mode can use ${_rmqcpp_manifest_dir}")
-      unset(rmqcpp_DIR CACHE)
-    endif()
-  endif()
-
-  # rmqcpp is provided by the vcpkg manifest for this repo.
-  find_package(rmqcpp CONFIG REQUIRED)
-
-  if (NOT TARGET rmqcpp::rmq)
-    message(FATAL_ERROR "rmqcpp was found, but the expected imported target rmqcpp::rmq was not exported")
-  endif()
-
-  set(RMQCPP_TARGET rmqcpp::rmq)
-  set(SOUNDLINUXAGENT_HAS_RMQCPP 1)
+if (NOT TARGET rmqcpp::rmq)
+  message(FATAL_ERROR "rmqcpp was found, but the expected imported target rmqcpp::rmq was not exported")
 endif()
 
 find_package(PkgConfig REQUIRED)
@@ -78,18 +59,12 @@ add_executable(LinuxSoundScanner
     "LinuxSoundScanner.cpp"
     "ServiceObserver.cpp"
     "ApiClient/AudioDeviceApiClient.cpp"
-)
-
-if (SOUNDLINUXAGENT_HAS_RMQCPP)
-  target_sources(LinuxSoundScanner PRIVATE
     "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
     "ApiClient/RequestPublisher.cpp"
-  )
-endif()
+)
 
 set_property(TARGET LinuxSoundScanner PROPERTY CXX_STANDARD 20)
 target_compile_definitions(LinuxSoundScanner PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
-target_compile_definitions(LinuxSoundScanner PRIVATE SOUNDLINUXAGENT_HAS_RMQCPP=${SOUNDLINUXAGENT_HAS_RMQCPP})
 
 target_include_directories(LinuxSoundScanner PRIVATE
     .
@@ -107,11 +82,8 @@ target_link_libraries(LinuxSoundScanner PRIVATE
     Poco::Net
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
+    rmqcpp::rmq
 )
-
-if (SOUNDLINUXAGENT_HAS_RMQCPP)
-  target_link_libraries(LinuxSoundScanner PRIVATE ${RMQCPP_TARGET})
-endif()
 
 install(TARGETS SoundLinuxCli
     DESTINATION bin

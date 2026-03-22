@@ -14,10 +14,7 @@
 
 #include "cpversion.h"
 #include "ServiceObserver.h"
-
-#if SOUNDLINUXAGENT_HAS_RMQCPP
 #include "ApiClient/RabbitMqHttpRequestDispatcher.h"
-#endif
 
 
 using Poco::Util::ServerApplication;
@@ -122,7 +119,7 @@ protected:
 
     }
 
-    void HandleTransport(const std::string& name, const std::string& value)
+    void HandleTransport(const std::string&, const std::string& value)
     {
         std::cout << fmt::format(R"(Got Transport Method "{}"
 )", value);
@@ -171,9 +168,9 @@ protected:
                 class EmptyDispatcher : public HttpRequestDispatcherInterface
                 {
                 public:
-                    void EnqueueRequest(bool, const std::chrono::system_clock::time_point&,
+                    void EnqueueRequest(bool,
                                         const std::string&, const std::string&,
-                                        const std::unordered_map<std::string, std::string>&, const std::string&
+                                        const std::string&
                     ) override
                     {
                         spdlog::info("Enqueueing ignored, because the transport method is \"{}\"",
@@ -184,14 +181,7 @@ protected:
             }
             else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
             {
-#if SOUNDLINUXAGENT_HAS_RMQCPP
                 requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher());
-#else
-                throw std::runtime_error(
-                    "RabbitMQ transport selected, but this build was compiled without rmqcpp support. "
-                    "Reconfigure with -DSOUNDLINUXAGENT_ENABLE_RMQCPP=ON so the vcpkg manifest installs rmqcpp."
-                );
-#endif
             }
             
 //            AgentObserver subscriber(collection);
