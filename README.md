@@ -9,7 +9,7 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/) with a React / TypeScript frontend [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/), see [Primary Web Client](https://list-audio-react-app.vercel.app) application.
 
 ## Executables Generated
-- **LinuxSoundScanner**: Linux Daemon collects audio device information and sends it to a remote server.
+- **LinuxSoundScanner**: Linux executable collects audio device information and sends it to a remote server.
 - **SoundLinuxCli**: Command-line test CLI.
 
 ## Used Technologies and Requirements
@@ -19,7 +19,7 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 - **vcpkg** with `VCPKG_ROOT` set to your local vcpkg installation path
 - **rmqcpp** provided by the repo's vcpkg manifest
 - **PulseAudio server**
-- **Poco package** leverages Linux Daemon life cycle code.
+- **Poco package** leverages Linux executable life cycle code.
 
 ## Developer Build
 

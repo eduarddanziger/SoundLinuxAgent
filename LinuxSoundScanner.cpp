@@ -26,7 +26,7 @@ using Poco::Util::Option;
 using Poco::Util::OptionSet;
 using Poco::Util::HelpFormatter;
 
-class SoundLinuxDaemon final : public ServerApplication
+class LinuxSoundScanner final : public ServerApplication
 {
 protected:
     static std::function<void()> deactivateCallback_;
@@ -73,7 +73,7 @@ protected:
 
     static void SetUpLog()
     {
-        constexpr auto appName = "SoundLinuxDaemon";
+        constexpr auto appName = "LinuxSoundScanner";
         ed::model::Logger::Inst().ConfigureAppNameAndVersion(appName, VERSION).SetOutputToConsole(true);
         try
         {
@@ -106,19 +106,19 @@ protected:
             .required(false)
             .repeatable(false)
             .argument("<transport>", true)
-            .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleTransport)));
+            .callback(Poco::Util::OptionCallback<LinuxSoundScanner>(this, &LinuxSoundScanner::HandleTransport)));
 
         options.addOption(
             Option("help", "h", "Help information")
                 .required(false)
                 .repeatable(false)
-                .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::HandleHelp)));
+                .callback(Poco::Util::OptionCallback<LinuxSoundScanner>(this, &LinuxSoundScanner::HandleHelp)));
 
         options.addOption(
             Option("version", "v", "Version information")
             .required(false)
             .repeatable(false)
-            .callback(Poco::Util::OptionCallback<SoundLinuxDaemon>(this, &SoundLinuxDaemon::handleVersion)));
+            .callback(Poco::Util::OptionCallback<LinuxSoundScanner>(this, &LinuxSoundScanner::handleVersion)));
 
     }
 
@@ -155,7 +155,7 @@ protected:
 
         try
         {
-            spdlog::info("Sound Linux Daemon {} started", VERSION); 
+            spdlog::info("Linux Sound Scanner {} started", VERSION); 
 
             const auto deviceCollectionSmartPtr = SoundAgent::CreateDeviceCollection();
             if (deviceCollectionSmartPtr == nullptr)
@@ -262,7 +262,7 @@ private:
     
 };
 
-std::function<void()> SoundLinuxDaemon::deactivateCallback_{nullptr};
+std::function<void()> LinuxSoundScanner::deactivateCallback_{nullptr};
 
 
-POCO_SERVER_MAIN(SoundLinuxDaemon)
+POCO_SERVER_MAIN(LinuxSoundScanner)
