@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+env:
+  BUILD_PRESET: linux-release
+  BUILD_DIR: out/build/linux-release
+
 jobs:
   build:
     if: github.ref != 'refs/pull/develop'
@@ -20,9 +24,6 @@ jobs:
       version: ${{ steps.get_version.outputs.VERSION }}  # Output the VERSION variable
 
     steps:
-    - name: Install GitHub CLI
-      run: sudo apt-get install -y gh
-
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
@@ -32,26 +33,16 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build libpulse-dev libglib2.0-dev libpoco-dev libcpprest-dev nlohmann-json3-dev libsodium-dev
-        SAVED_DIR=$(pwd)
-        cd "${{ runner.temp }}"
-        git clone https://github.com/gabime/spdlog.git
-        cd spdlog
-        git checkout v1.15.2
-        mkdir build && cd build
-        cmake .. && cmake --build .
-        sudo make install
-        cd "${{ runner.temp }}"
-        git clone https://github.com/fmtlib/fmt.git
-        cd fmt
-        git checkout 10.2.1
-        mkdir build && cd build
-        cmake .. && cmake --build .
-        sudo make install
-        cd "$SAVED_DIR"
+        sudo apt-get install -y ninja-build pkg-config libpulse-dev libglib2.0-dev
+
+    - name: Set up vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg "${{ runner.temp }}/vcpkg"
+        "${{ runner.temp }}/vcpkg/bootstrap-vcpkg.sh"
+        echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> "$GITHUB_ENV"
 
     - name: Get version from Git tags
       id: get_version
@@ -84,16 +75,14 @@ jobs:
         echo "Using version: $VERSION"
 
     - name: Configure CMake
-      run: cmake -G Ninja -B build -DPKG_VERSION=${{ steps.get_version.outputs.VERSION }}
+      run: cmake --preset "${BUILD_PRESET}" -DPKG_VERSION=${{ steps.get_version.outputs.VERSION }}
 
-    - name: Package with CPack
-      run: |
-        cmake --build build
+    - name: Build and package
+      run: cmake --build --preset "${BUILD_PRESET}"
 
     - name: Verify DEB package
       run: |
-        # dpkg -c build/*.deb doesn't work, no idea why.. bash error?
-        for deb_file in build/*.deb; do 
+        for deb_file in "${BUILD_DIR}"/*.deb; do
           if [ -f "$deb_file" ]; then
             echo "Inspecting package: $deb_file"
             dpkg -c "$deb_file"
@@ -104,7 +93,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SoundLinuxAgent-deb
-        path: build/*.deb
+        path: ${{ env.BUILD_DIR }}/*.deb
         overwrite: true
 
   publish:
@@ -112,9 +101,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
     - name: Download DEB package
       uses: actions/download-artifact@v4
       with:
@@ -122,7 +108,9 @@ jobs:
         path: build
 
     - name: Create Release
-      run: |
-        VERS=${{ needs.build.outputs.version }}
-        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-        gh release create "$VERS" build/*.deb --title "SoundLinuxAgent $VERS" --notes "Release of SoundLinuxAgent $VERS"
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.build.outputs.version }}
+        name: SoundLinuxAgent ${{ needs.build.outputs.version }}
+        body: Release of SoundLinuxAgent ${{ needs.build.outputs.version }}
+        files: build/*.deb
