@@ -76,6 +76,17 @@ In order to install LinuxSoundScanner using the generated DEB package:
 - LinuxSoundScanner can be started as console app, too. Stop it via Ctrl-C
 - The --help option brings a command line help screen with all available options.
 
+## Configuration
+
+- `LinuxSoundScanner.xml` uses `TRANSPORT_METHOD` from the environment if it is set.
+- Supported values are `RabbitMQ` and `None`.
+- If `TRANSPORT_METHOD` is not set, the default is `RabbitMQ`.
+- Example:
+   ```bash
+   export TRANSPORT_METHOD=None
+   /usr/bin/LinuxSoundScanner --daemon --pid-file=/tmp/LinuxSoundScanner.pid
+   ```
+
 ## Changelog
 
 - 2026-03-22 Sent confirm events.

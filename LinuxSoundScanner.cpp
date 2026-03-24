@@ -59,7 +59,7 @@ protected:
             && Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) != 0
         )
         {
-            spdlog::info(R"(Invalid transport method "{}". Using default: "{}".)", transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE);
+            spdlog::info(R"(Invalid transport method "{}". Set it to "{}".)", transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE);
             transportMethod_ = API_TRANSPORT_METHOD_VALUE00_NONE;
         }
         else
