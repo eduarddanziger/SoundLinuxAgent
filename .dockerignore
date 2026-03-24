@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.vs
+.vscode
+out
+
+*.deb
+
+Folder.DotSettings
+GetWslEthernetAdapter.ps1
