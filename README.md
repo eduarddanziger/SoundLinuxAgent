@@ -10,7 +10,6 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 
 ## Executables Generated
 - **LinuxSoundScanner**: Linux executable collects audio device information and sends it to a remote server.
-- **SoundLinuxCli**: Command-line test CLI.
 
 ## Used Technologies and Requirements
 - **C++20 compatible compiler**
@@ -92,7 +91,6 @@ In order to install LinuxSoundScanner using the generated DEB package:
 - 2026-03-22 Sent confirm events.
 - 2026-03-22 Renamed the main executable to LinuxSoundScanner.
 - 2026-03-07 Simplified CMake presets and build steps.
-- 2025-04-23 Split the build into CLI and daemon targets with DEB packages.
 
 ## License
 
