@@ -44,17 +44,6 @@ find_package(PkgConfig REQUIRED)
 
 add_subdirectory(SoundLib)
 
-add_executable(SoundLinuxCli "SoundLinuxCli.cpp")
-set_property(TARGET SoundLinuxCli PROPERTY CXX_STANDARD 20)
-target_compile_definitions(SoundLinuxCli PRIVATE SPDLOG_HEADER_ONLY SPDLOG_FMT_EXTERNAL)
-target_include_directories(SoundLinuxCli PRIVATE ${CMAKE_BINARY_DIR})
-
-target_link_libraries(SoundLinuxCli PRIVATE
-    spdlog::spdlog_header_only
-    fmt::fmt
-    SoundLib
-)
-
 add_executable(LinuxSoundScanner
     "LinuxSoundScanner.cpp"
     "ServiceObserver.cpp"
@@ -85,10 +74,6 @@ target_link_libraries(LinuxSoundScanner PRIVATE
     rmqcpp::rmq
 )
 
-install(TARGETS SoundLinuxCli
-    DESTINATION bin
-    COMPONENT SoundLinuxCli)
-
 install(TARGETS LinuxSoundScanner
     DESTINATION bin
     COMPONENT LinuxSoundScanner)
@@ -114,12 +99,11 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
 
-set(CPACK_COMPONENTS_ALL SoundLinuxCli LinuxSoundScanner)
+set(CPACK_COMPONENTS_ALL LinuxSoundScanner)
 
 if(UNIX AND NOT APPLE)
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
-  set(CPACK_DEBIAN_SOUNDLINUXCLI_PACKAGE_NAME "SoundLinuxCli")
   set(CPACK_DEBIAN_LINUXSOUNDSCANNER_PACKAGE_NAME "LinuxSoundScanner")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libssl3")
 endif()
@@ -131,7 +115,7 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "SoundLinuxAgent")
 include(CPack)
 
 add_custom_command(
-    TARGET SoundLinuxCli LinuxSoundScanner POST_BUILD
+  TARGET LinuxSoundScanner POST_BUILD
     COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
     COMMENT "Generating DEB package"
 )

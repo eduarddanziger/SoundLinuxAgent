@@ -10,7 +10,6 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 
 ## Executables Generated
 - **LinuxSoundScanner**: Linux executable collects audio device information and sends it to a remote server.
-- **SoundLinuxCli**: Command-line test CLI.
 
 ## Used Technologies and Requirements
 - **C++20 compatible compiler**
@@ -68,20 +67,26 @@ In order to install LinuxSoundScanner using the generated DEB package:
 
 ## Starting
 
-- Start it as a daemon or put the following command into your systemd service file:
+- Start it as a console app and stop it via Ctrl-C
    ```bash
-   /usr/bin/LinuxSoundScanner --daemon --pid-file=/tmp/LinuxSoundScanner.pid
+   /usr/bin/LinuxSoundScanner
    ```
-- To stop the daemon, call kill -TERM < pid >
-- LinuxSoundScanner can be started as console app, too. Stop it via Ctrl-C
-- The --help option brings a command line help screen with all available options.
+- The `--help` option brings a command line help screen with all available options.
+- The `--version` option outputs a version info
+
+- `LinuxSoundScanner.xml` uses `TRANSPORT_METHOD` from the environment if it is set.
+- Supported values are `RabbitMQ` (default) and `None`.
+- Example:
+   ```bash
+   export TRANSPORT_METHOD=None
+   /usr/bin/LinuxSoundScanner
+   ```
 
 ## Changelog
 
 - 2026-03-22 Sent confirm events.
 - 2026-03-22 Renamed the main executable to LinuxSoundScanner.
 - 2026-03-07 Simplified CMake presets and build steps.
-- 2025-04-23 Split the build into CLI and daemon targets with DEB packages.
 
 ## License
 
