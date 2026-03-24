@@ -1,5 +1,7 @@
 FROM debian:trixie-slim AS builder
 
+ARG PKG_VERSION=1.0.0
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV VCPKG_ROOT=/opt/vcpkg
 
@@ -25,11 +27,13 @@ WORKDIR /src
 
 COPY . .
 
-RUN cmake --preset linux-release -DCMAKE_CXX_FLAGS=-O3 \
+RUN cmake --preset linux-release -DPKG_VERSION="${PKG_VERSION}" \
     && cmake --build --preset linux-release \
     && cmake --install out/build/linux-release --prefix /opt/linuxsoundscanner
 
 FROM debian:trixie-slim AS runtime
+
+ARG PKG_VERSION=1.0.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -40,8 +44,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpulse-mainloop-glib0 \
     && rm -rf /var/lib/apt/lists/*
 
+LABEL org.opencontainers.image.title="LinuxSoundScanner" \
+      org.opencontainers.image.version="${PKG_VERSION}"
+
 WORKDIR /opt/linuxsoundscanner/bin
 
-COPY --from=builder /opt/linuxsoundscanner /opt/linuxsoundscanner
+COPY --from=builder /opt/linuxsoundscanner/bin/LinuxSoundScanner /opt/linuxsoundscanner/bin/LinuxSoundScanner
+COPY --from=builder /opt/linuxsoundscanner/bin/LinuxSoundScanner.xml /opt/linuxsoundscanner/bin/LinuxSoundScanner.xml
 
 ENTRYPOINT ["/opt/linuxsoundscanner/bin/LinuxSoundScanner"]
