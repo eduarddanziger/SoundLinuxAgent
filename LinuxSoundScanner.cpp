@@ -1,6 +1,6 @@
 #include "ApiClient/common/SpdLogger.h"
 
-#include <Poco/Util/ServerApplication.h>
+#include <Poco/Util/Application.h>
 #include <Poco/Util/Option.h>
 #include <Poco/Util/OptionSet.h>
 #include <Poco/Util/HelpFormatter.h>
@@ -17,13 +17,12 @@
 #include "ApiClient/RabbitMqHttpRequestDispatcher.h"
 
 
-using Poco::Util::ServerApplication;
 using Poco::Util::Application;
 using Poco::Util::Option;
 using Poco::Util::OptionSet;
 using Poco::Util::HelpFormatter;
 
-class LinuxSoundScanner final : public ServerApplication
+class LinuxSoundScanner final : public Application
 {
 protected:
     static std::function<void()> deactivateCallback_;
@@ -45,7 +44,7 @@ protected:
     void initialize(Application& self) override
     {
         loadConfiguration();
-        ServerApplication::initialize(self);
+        Application::initialize(self);
 
         SetUpLog();
 
@@ -96,7 +95,7 @@ protected:
 
     void defineOptions(OptionSet& options) override
     {
-        ServerApplication::defineOptions(options);
+        Application::defineOptions(options);
 
         options.addOption(
             Poco::Util::Option("transport", "", "Transport method: None or RabbitMQ")
@@ -255,4 +254,4 @@ private:
 std::function<void()> LinuxSoundScanner::deactivateCallback_{nullptr};
 
 
-POCO_SERVER_MAIN(LinuxSoundScanner)
+POCO_APP_MAIN(LinuxSoundScanner)
