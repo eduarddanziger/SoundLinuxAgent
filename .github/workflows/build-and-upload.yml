@@ -92,4 +92,5 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
+        name: SoundLinuxAgent ${{ steps.get_version.outputs.IMAGE_VERSION }}
         files: ${{ steps.prepare_compose.outputs.artifact_path }}
