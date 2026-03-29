@@ -180,7 +180,8 @@ protected:
             }
             else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
             {
-                requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher());
+                const auto rmqHostName = ReadOptionalSimpleConfigProperty(API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY);
+                requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher(rmqHostName));
             }
             
 //            AgentObserver subscriber(collection);
@@ -248,7 +249,8 @@ private:
     static constexpr auto API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
     static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
     static constexpr auto API_TRANSPORT_METHOD_VALUE02_RABBITMQ = "RabbitMQ";
-    
+
+    static constexpr auto API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
 };
 
 std::function<void()> LinuxSoundScanner::deactivateCallback_{nullptr};
