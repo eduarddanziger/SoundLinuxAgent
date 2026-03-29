@@ -250,7 +250,7 @@ private:
     static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
     static constexpr auto API_TRANSPORT_METHOD_VALUE02_RABBITMQ = "RabbitMQ";
 
-    static constexpr auto API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
+    static constexpr auto API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY = "custom.rmqHostName";
 };
 
 std::function<void()> LinuxSoundScanner::deactivateCallback_{nullptr};
