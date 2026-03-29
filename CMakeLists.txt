@@ -75,47 +75,17 @@ target_link_libraries(LinuxSoundScanner PRIVATE
 )
 
 install(TARGETS LinuxSoundScanner
-    DESTINATION bin
-    COMPONENT LinuxSoundScanner)
+    DESTINATION bin)
 
 install(FILES LinuxSoundScanner.xml
-  DESTINATION bin
-  COMPONENT LinuxSoundScanner)
+  DESTINATION bin)
 
-# The package name and version
-set(CPACK_PACKAGE_NAME "SoundLinuxAgent")
+# The application version
 if(NOT DEFINED PKG_VERSION)
-  set(CPACK_PACKAGE_VERSION "1.0.0" CACHE STRING "Package version" FORCE)
+  set(APP_VERSION "1.0.0")
 else()
-  set(CPACK_PACKAGE_VERSION ${PKG_VERSION})
+  set(APP_VERSION ${PKG_VERSION})
 endif()
 
-# Configure cpversion.h from cpversion.h.using substitution of CPACK_PACKAGE_VERSION
+# Configure cpversion.h from cpversion.h.in using APP_VERSION.
 configure_file(${CMAKE_SOURCE_DIR}/cpversion.h.in ${CMAKE_BINARY_DIR}/cpversion.h @ONLY)
-file(READ "${CMAKE_BINARY_DIR}/cpversion.h" CPVERSION_CONTENT)
-
-set(CPACK_PACKAGE_CONTACT "Eduard Danziger <edanziger@gmx.de>")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SoundLinuxAgent is an Linux Sound Device agent.")
-
-set(CPACK_COMPONENTS_ALL LinuxSoundScanner)
-
-if(UNIX AND NOT APPLE)
-  set(CPACK_GENERATOR "DEB")
-  set(CPACK_DEB_COMPONENT_INSTALL ON)  # This enables component-based DEB packaging
-  set(CPACK_DEBIAN_LINUXSOUNDSCANNER_PACKAGE_NAME "LinuxSoundScanner")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libasound2, libssl3")
-endif()
-
-# Specify the installation directory
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "SoundLinuxAgent")
-
-# Include CPack last
-include(CPack)
-
-add_custom_command(
-  TARGET LinuxSoundScanner POST_BUILD
-    COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
-    COMMENT "Generating DEB package"
-)
