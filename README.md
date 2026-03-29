@@ -2,40 +2,55 @@
 
 Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publishes their state changes to RabbitMQ for delivery to a REST API server.
 
-## Functions
-- The SoundLinuxAgent collects audio device information on startup and subscribes to its changes.
-- It forms the respective request-messages and pushes them to RabbitMQ channel.
-- The separate RMQ To REST API Forwarder (.NET service module) fetches the request-messages, transforms them to the REST API format (POST and PUT) and sends them to the 
-Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/) with a React / TypeScript frontend [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/), see [Primary Web Client](https://list-audio-react-app.vercel.app) application.
+## What It Does
 
-## Executables Generated
-- **LinuxSoundScanner**: Linux executable collects audio device information and sends it to a remote server.
+- Collects audio device information at startup and monitors device changes.
+- Publishes device events to RabbitMQ.
+- Integrates with the Audio Device Repository stack:
+   [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/),
+   [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/),
+   [Primary Web Client](https://list-audio-react-app.vercel.app).
 
-## Used Technologies and Requirements
+## Deployment
+
+1. Install Docker Engine and the Docker Compose plugin on the target Linux host.
+2. Create a deployment folder and download `docker-compose.yml` from the latest release assets into it:
+   [Release](https://github.com/eduarddanziger/SoundLinuxAgent/releases/latest)
+3. Start the service:
+
+   ```bash
+   docker compose up -d
+   ```
+
+4. Install the latest version of the RMQ to REST API Forwarder by following the instructions in
+   [rmq-to-rest-api-forwarder](https://github.com/collect-sound-devices/rmq-to-rest-api-forwarder/).
+
+
+## Developer Build
+
+### Requirements
+
 - **C++20 compatible compiler**
 - **CMake 3.29 or higher**
 - **Ninja build system**
 - **vcpkg** package manager
-- **rmqcpp** for publishing at RabbitMQ
+- **rmqcpp** for publishing to RabbitMQ
 - **PulseAudio server**
-- **Poco package** leverages Linux executable life cycle code.
-
-## Developer Build
+- **Poco** for Linux service lifecycle support
 
 ### Prerequisites
 
 - Linux build tools installed: `gcc`, `g++`, `cmake` 3.29+, `ninja`, and `pkg-config`
 - PulseAudio development files installed, for example `libpulse-dev` on Debian/Ubuntu
-- `vcpkg` installed and bootstrapped:
-   - Clone `vcpkg` to `/path/to/vcpkg`
-   - Run `./bootstrap-vcpkg.sh`
-- Ensure `/path/to/vcpkg` is included into PATH and VCPKG_ROOT configured:
+- `vcpkg` installed and bootstrapped
+- `VCPKG_ROOT` configured, for example:
    ```bash
    export VCPKG_ROOT=/path/to/vcpkg
    ```
+
 ### Instructions
 
-1. Clone the repository
+1. Clone the repository.
 2. Configure the project:
 
    ```bash
@@ -48,42 +63,9 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
    cmake --build --preset linux-debug
    ```
 
-## Installation
-
-In order to install LinuxSoundScanner using the generated DEB package:
-
-1. Install a DEB-package from latest GitHub-Release, [here](https://github.com/eduarddanziger/SoundLinuxAgent/releases/latest).
-   ```bash
-   sudo dpkg -i SoundLinuxAgent-x.x.x-Linux-LinuxSoundScanner.deb
-   ```
-2. If there are missing dependencies, fix them by running:
-
-   ```bash
-   sudo apt-get install -f
-   sudo apt-get install -y libpoco-dev
-   ```
-3. Install the latwest version of the RmqToRestApiForwarder (distributed via docker-compose, together with RabbitMQ event brocker), following the installation instructions of [rmq-to-rest-api-forwarder](https://github.com/collect-sound-devices/rmq-to-rest-api-forwarder/) repository.
-
-
-## Starting
-
-- Start it as a console app and stop it via Ctrl-C
-   ```bash
-   /usr/bin/LinuxSoundScanner
-   ```
-- The `--help` option brings a command line help screen with all available options.
-- The `--version` option outputs a version info
-
-- `LinuxSoundScanner.xml` uses `TRANSPORT_METHOD` from the environment if it is set.
-- Supported values are `RabbitMQ` (default) and `None`.
-- Example:
-   ```bash
-   export TRANSPORT_METHOD=None
-   /usr/bin/LinuxSoundScanner
-   ```
-
 ## Changelog
 
+- 2026-03-29 CLI executable and DEB file removed. **LinuxSoundScanner** is distributed via Docker Compose.
 - 2026-03-22 Sent confirm events.
 - 2026-03-22 Renamed the main executable to LinuxSoundScanner.
 - 2026-03-07 Simplified CMake presets and build steps.
