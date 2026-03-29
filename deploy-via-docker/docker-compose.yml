@@ -1,0 +1,6 @@
+services:
+  linuxsoundscanner:
+    image: $image_name$:$version$
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs

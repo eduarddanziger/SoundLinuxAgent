@@ -1,3 +1,4 @@
+# The builder image
 FROM debian:trixie-slim AS builder
 
 ARG PKG_VERSION=1.0.0
@@ -31,6 +32,7 @@ RUN cmake --preset linux-release -DPKG_VERSION="${PKG_VERSION}" \
     && cmake --build --preset linux-release \
     && cmake --install out/build/linux-release --prefix /opt/linuxsoundscanner
 
+# The runtime image
 FROM debian:trixie-slim AS runtime
 
 ARG PKG_VERSION=1.0.0
