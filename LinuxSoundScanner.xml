@@ -3,5 +3,6 @@
     <custom>
         <transportMethod>${system.env.TRANSPORT_METHOD:-RabbitMQ}</transportMethod>
 <!-- <transportMethod>None</transportMethod> -->
+        <rmqHostName>${system.env.RMQ_HOST:-localhost}</rmqHostName>
     </custom>
 </config>

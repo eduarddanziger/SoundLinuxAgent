@@ -2,5 +2,7 @@ services:
   linuxsoundscanner:
     image: $image_name$:$version$
     restart: unless-stopped
+    environment:
+      RMQ_HOST: rabbitmq
     volumes:
       - ./logs:/app/logs

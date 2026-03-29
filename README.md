@@ -13,16 +13,21 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 
 ## Deployment
 
-1. Install Docker Engine and the Docker Compose plugin on the target Linux host.
-2. Create a deployment folder and download `docker-compose.yml` from the latest release assets into it:
+### Prerequisites
+
+- Docker Engine and the Docker Compose plugin installed on the target Linux host
+
+### Instructions
+
+1. Create a deployment folder and download `docker-compose.yml` from the latest release assets into it:
    [Release](https://github.com/eduarddanziger/SoundLinuxAgent/releases/latest)
-3. Start the service:
+2. Start the service:
 
    ```bash
    docker compose up -d
    ```
 
-4. Install the latest version of the RMQ to REST API Forwarder by following the instructions in
+3. Install the latest version of the RMQ to REST API Forwarder by following the instructions in
    [rmq-to-rest-api-forwarder](https://github.com/collect-sound-devices/rmq-to-rest-api-forwarder/).
 
 
@@ -62,6 +67,19 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
    ```bash
    cmake --build --preset linux-debug
    ```
+
+## Configuration
+
+### Environment Variables and RabbitMQ
+
+- `TRANSPORT_METHOD` selects the transport mode. Supported values are `RabbitMQ` and `None`, the default is `RabbitMQ`
+<br><br>Set `TRANSPORT_METHOD` to `None`, if you want the scanner not top send requests to RabbitMQ but only log them:
+   ```bash
+   export TRANSPORT_METHOD=None
+   ```
+
+- `RMQ_HOST` sets the RabbitMQ host name used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `localhost`.
+<br><br>In [deploy-via-docker/docker-compose.yml](deploy-via-docker/docker-compose.yml), it is set to `rabbitmq` via the container environment.
 
 ## Changelog
 
