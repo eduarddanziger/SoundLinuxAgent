@@ -5,4 +5,4 @@ services:
     environment:
       RMQ_HOST: rabbitmq
     volumes:
-      - ./logs:/app/logs
+      - ./logs:/root/logs
