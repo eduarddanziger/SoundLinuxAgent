@@ -3,6 +3,8 @@ services:
     image: $image_name$:$version$
     restart: unless-stopped
     environment:
-      RMQ_HOST: rabbitmq
+      RMQ_HOST: host.docker.internal
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - ./logs:/root/logs
