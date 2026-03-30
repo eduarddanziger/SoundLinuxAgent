@@ -3,6 +3,12 @@ services:
     image: $image_name$:$version$
     restart: unless-stopped
     environment:
-      RMQ_HOST: rabbitmq
+      HOME: /tmp/linuxsoundscanner-home
+      PULSE_SERVER: unix:/tmp/pulse/native
+      RMQ_HOST: host.docker.internal
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
-      - ./logs:/root/logs
+      - ./logs:/tmp/linuxsoundscanner-home/logs
+      - ${XDG_RUNTIME_DIR}/pulse:/tmp/pulse
+      - ${HOME}/.config/pulse:/tmp/linuxsoundscanner-home/.config/pulse:ro

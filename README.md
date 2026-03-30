@@ -16,6 +16,7 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 ### Prerequisites
 
 - Docker Engine and the Docker Compose plugin installed on the target Linux host
+- PulseAudio or PipeWire with PulseAudio compatibility running in the host user session
 
 ### Instructions
 
@@ -80,6 +81,10 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 
 - `RMQ_HOST` sets the RabbitMQ host name used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `localhost`.
 <br><br>In [deploy-via-docker/docker-compose.yml](deploy-via-docker/docker-compose.yml), it is set to `rabbitmq` via the container environment.
+
+- `RMQ_USER` sets the RabbitMQ user name used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
+
+- `RMQ_PASSWORD` sets the RabbitMQ password used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
 
 ## Changelog
 
