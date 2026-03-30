@@ -16,6 +16,7 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 ### Prerequisites
 
 - Docker Engine and the Docker Compose plugin installed on the target Linux host
+- PulseAudio or PipeWire with PulseAudio compatibility running in the host user session
 
 ### Instructions
 
