@@ -4,5 +4,7 @@
         <transportMethod>${system.env.TRANSPORT_METHOD:-RabbitMQ}</transportMethod>
 <!-- <transportMethod>None</transportMethod> -->
         <rmqHostName>${system.env.RMQ_HOST:-localhost}</rmqHostName>
+        <rmqUserName>${system.env.RMQ_USER:-guest}</rmqUserName>
+        <rmqPassword>${system.env.RMQ_PASSWORD:-guest}</rmqPassword>
     </custom>
 </config>

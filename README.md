@@ -81,6 +81,10 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 - `RMQ_HOST` sets the RabbitMQ host name used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `localhost`.
 <br><br>In [deploy-via-docker/docker-compose.yml](deploy-via-docker/docker-compose.yml), it is set to `rabbitmq` via the container environment.
 
+- `RMQ_USER` sets the RabbitMQ user name used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
+
+- `RMQ_PASSWORD` sets the RabbitMQ password used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
+
 ## Changelog
 
 - 2026-03-29 CLI executable and DEB file removed. **LinuxSoundScanner** is distributed via Docker Compose.
