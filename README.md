@@ -1,6 +1,6 @@
-# SoundLinuxAgent
+# LinuxSoundScanner
 
-Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publishes their state changes to RabbitMQ for delivery to a REST API server.
+Linux Sound Scanner (LinuxSoundScanner) monitors audio devices under Linux and publishes their state changes to RabbitMQ for delivery to a REST API server.
 
 ## What It Does
 
@@ -21,7 +21,7 @@ Linux Sound Agent (SoundLinuxAgent) monitors audio devices under Linux and publi
 ### Instructions
 
 1. Create a deployment folder and download `docker-compose.yml` from the latest release assets into it:
-   [Release](https://github.com/eduarddanziger/SoundLinuxAgent/releases/latest)
+   [Release](https://github.com/collect-sound-devices/linux-sound-scanner/releases/latest)
 2. Start the service:
 
    ```bash
