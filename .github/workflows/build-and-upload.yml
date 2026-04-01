@@ -93,5 +93,5 @@ jobs:
       with:
         tag_name: ${{ steps.get_version.outputs.IMAGE_VERSION }}
         target_commitish: ${{ github.sha }}
-        name: SoundLinuxAgent ${{ steps.get_version.outputs.IMAGE_VERSION }}
+        name: LinuxSoundScanner ${{ steps.get_version.outputs.IMAGE_VERSION }}
         files: ${{ steps.prepare_compose.outputs.artifact_path }}

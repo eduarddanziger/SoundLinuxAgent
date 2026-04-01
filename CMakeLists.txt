@@ -14,7 +14,7 @@ if (POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)
 endif()
 
-project("SoundLinuxAgent")
+project("LinuxSoundScanner")
 
 # Enforce out-of-source builds
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
