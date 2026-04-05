@@ -75,11 +75,17 @@ std::string ServiceObserver::GetHostName()
         {
             char hostNameBuffer[MAX_COMPUTER_NAME_LENGTH];
             if (gethostname(hostNameBuffer, MAX_COMPUTER_NAME_LENGTH) != 0) {
-                return "UNKNOWN_HOST";
+                spdlog::warn("Failed to get host name by gethostname.");
+                strcpy(hostNameBuffer, "UNKNOWN_HOST");
+            }
+            else
+            {
+                spdlog::info("Host name obtained from gethostname: {}.", hostNameBuffer);
             }
             std::string hostName(hostNameBuffer);
             std::ranges::transform(hostName, hostName.begin(),
                 [](char c) { return std::toupper(c); });
+            spdlog::info("Rememberred host name: {}.", hostName);
             return hostName;
         }();
     return HOST_NAME;
@@ -87,39 +93,63 @@ std::string ServiceObserver::GetHostName()
 
 std::string ServiceObserver::GetOperationSystemName()
 {
-    std::ifstream osReleaseFile("/etc/os-release");
-
-    std::string distroName, distroVersion;
-    if (osReleaseFile.is_open())
-    {
-        std::string line;
-        while (std::getline(osReleaseFile, line))
+    static const std::string OS_NAME = []() -> std::string
         {
-            if (constexpr auto namePrefix = "NAME="; line.find(namePrefix) == 0)
+            std::ifstream osReleaseFile("/etc/os-release");
+            std::string osName, distroName, distroVersion;
+            if (osReleaseFile.is_open())
             {
-                distroName = line.substr(std::strlen(namePrefix));
-                std::erase(distroName, '"'); // Remove quotes
+                std::string line;
+                while (std::getline(osReleaseFile, line))
+                {
+                    if (constexpr auto namePrefix = "NAME="; line.find(namePrefix) == 0)
+                    {
+                        distroName = line.substr(std::strlen(namePrefix));
+                        std::erase(distroName, '"'); // Remove quotes
+                    }
+                    else if (constexpr auto versionPrefix = "VERSION_ID="; line.find(versionPrefix) == 0)
+                    {
+                        distroVersion = line.substr(std::strlen(versionPrefix));
+                        std::erase(distroVersion, '"'); // Remove quotes
+                    }
+                }
             }
-            else if (constexpr auto versionPrefix = "VERSION_ID="; line.find(versionPrefix) == 0)
+            else
             {
-                distroVersion = line.substr(std::strlen(versionPrefix));
-                std::erase(distroVersion, '"'); // Remove quotes
+                spdlog::warn("Failed to open /etc/os-release to get OS distribution info.");
             }
-        }
-    }
+            if(!distroName.empty() && !distroVersion.empty())
+            {
+                spdlog::info("OS distribution obtained from /etc/os-release: {}, version {}.", distroName, distroVersion);
+            }
 
-    utsname uts{};
-    if (uname(&uts) != 0)
-    {
-        // Fallback if uname fails
-        if (!distroName.empty() && !distroVersion.empty())
-            return std::format("{} {}", distroName, distroVersion);
-        return "Linux, no version info";
-    }
-
-    if (!distroName.empty() && !distroVersion.empty())
-        return std::format("{} {} {}", distroName, distroVersion, uts.release);
-
-    // Fallback: just kernel version
-    return std::format("Linux {}", uts.release);
+            utsname uts{};
+            if (uname(&uts) != 0)
+            {
+                spdlog::warn("Failed to get OS version by uname.");
+                if (!distroName.empty() && !distroVersion.empty())
+                {
+                    osName = std::format("{} {}", distroName, distroVersion);
+                }
+                else
+                {
+                    osName = "Linux, no version info";
+                }
+            }
+            else
+            {
+                spdlog::info("OS version obtained from uname: {}.", uts.release);
+                if (!distroName.empty() && !distroVersion.empty())
+                {
+                    osName = std::format("{} {} {}", distroName, distroVersion, uts.release);
+                }
+                else
+                {
+                    osName = std::format("Linux, kernel {}", uts.release);
+                }
+            }
+            spdlog::info("Rememberred OS name: {}.", osName);
+            return osName;
+        }();
+    return OS_NAME;
 }
