@@ -10,6 +10,7 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     volumes:
+      - /etc/os-release:/etc/os-release:ro
       - ./logs:/tmp/linuxsoundscanner-home/logs
       - ${XDG_RUNTIME_DIR}/pulse:/tmp/pulse
       - ${HOME}/.config/pulse:/tmp/linuxsoundscanner-home/.config/pulse:ro
