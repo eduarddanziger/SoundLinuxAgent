@@ -1,5 +1,6 @@
 services:
   linuxsoundscanner:
+    uts: host
     image: $image_name$:$version$
     restart: unless-stopped
     environment:
