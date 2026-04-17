@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include "ApiClient/AudioDeviceApiClient.h"
-#include "ApiClient/common/StringUtils.h"
+#include "AudioDeviceApiClient.h"
+#include "internal/StringUtils.h"
 
 #include <spdlog/spdlog.h>
 #include "magic_enum/magic_enum.hpp"

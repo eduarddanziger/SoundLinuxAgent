@@ -51,10 +51,10 @@ Linux Sound Scanner (LinuxSoundScanner) monitors audio devices under Linux and p
 - `vcpkg` installed and bootstrapped
 - `VCPKG_ROOT` configured, for example:
    ```bash
-   export VCPKG_ROOT=/path/to/vcpkg
+   export VCPKG_ROOT=~/vcpkg
    ```
 
-### Instructions
+### CMake Build
 
 1. Clone the repository.
 2. Configure the project:
@@ -69,7 +69,18 @@ Linux Sound Scanner (LinuxSoundScanner) monitors audio devices under Linux and p
    cmake --build --preset linux-debug
    ```
 
-## Configuration
+### Visual Studio 2026 + WSL Build
+
+1. Set Tools > Options > CMake > General, CMake Configuration File to "Always use CMake Presets"
+2. Set Target System to "WSL"
+3. Project > Delete CMake Cache and Reconfigure
+4. Build > Build All
+
+The output executable will be located in `/home/<User>/.vs/linux-sound-scanner/out/build/<configuration>'
+on WSL.
+
+
+## Run Configuration
 
 ### Environment Variables and RabbitMQ
 

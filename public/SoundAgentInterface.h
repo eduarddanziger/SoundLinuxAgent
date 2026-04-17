@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "../ApiClient/common/ClassDefHelper.h"
+#include "../internal//ClassDefHelper.h"
 
 
 class SoundDeviceCollectionInterface;
