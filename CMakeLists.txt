@@ -51,9 +51,9 @@ add_subdirectory(SoundLib)
 add_executable(LinuxSoundScanner
     "LinuxSoundScanner.cpp"
     "ServiceObserver.cpp"
-    "ApiClient/AudioDeviceApiClient.cpp"
-    "ApiClient/RabbitMqHttpRequestDispatcher.cpp"
-    "ApiClient/RequestPublisher.cpp"
+    "AudioDeviceApiClient.cpp"
+    "RabbitMqHttpRequestDispatcher.cpp"
+    "RequestPublisher.cpp"
 )
 
 set_property(TARGET LinuxSoundScanner PROPERTY CXX_STANDARD 20)

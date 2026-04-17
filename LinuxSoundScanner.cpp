@@ -1,4 +1,4 @@
-#include "ApiClient/common/SpdLogger.h"
+#include "internal/SpdLogger.h"
 
 #include <Poco/Util/Application.h>
 #include <Poco/Util/Option.h>
@@ -14,7 +14,7 @@
 
 #include "cpversion.h"
 #include "ServiceObserver.h"
-#include "ApiClient/RabbitMqHttpRequestDispatcher.h"
+#include "RabbitMqHttpRequestDispatcher.h"
 
 
 using Poco::Util::Application;
