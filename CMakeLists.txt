@@ -14,6 +14,10 @@ if (POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)
 endif()
 
+# Debug: Show environment variables
+message(STATUS "HOME=$ENV{HOME}")
+message(STATUS "VCPKG_ROOT=$ENV{VCPKG_ROOT}")
+
 project("LinuxSoundScanner")
 
 # Enforce out-of-source builds

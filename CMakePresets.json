@@ -12,6 +12,9 @@
         "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_C_COMPILER": "gcc"
       },
+      "environment": {
+        "VCPKG_ROOT": "$env{HOME}/vcpkg"
+      },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
