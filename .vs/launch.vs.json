@@ -9,9 +9,6 @@
       "projectTarget": "LinuxSoundScanner",
       "comment": "Learn how to configure WSL debugging. For more info, see http://aka.ms/vslinuxdebug",
       "debuggerConfiguration": "gdb",
-      "args": [
-        "-url=http://192.168.233.142:5027"
-      ],
       "env": {}
     }
   ]
