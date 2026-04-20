@@ -12,6 +12,7 @@
         "net"
       ]
     },
+    "magic-enum",
     "nlohmann-json",
     "openssl"
   ]
