@@ -181,18 +181,18 @@ void PulseDeviceCollection::ScheduleReconnect()
         return;
     }
 
-    constexpr guint reconnectDelayMs = 1000;
+    constexpr guint initialReconnectDelayMs = 1000;
     static int64_t reconnectionCounter = 0;
-    auto recCount = reconnectionCounter++;
+    const auto currentReconnectCounterValueMs = reconnectionCounter++;
 
-    const auto ReconnectDelayMs = [recCount]()
+    const auto currentReconnectDelayMs = [currentReconnectCounterValueMs]()
     {
-        if (recCount == 0) return reconnectDelayMs;
-        if (recCount == 1) return reconnectDelayMs * 2;
-        return reconnectDelayMs * 5;
-    };
-    reconnectTimerId_ = g_timeout_add(ReconnectDelayMs(), ReconnectTimerCallback, this);
-    spdlog::info("Scheduled PulseAudio reconnect in {} ms", reconnectDelayMs);
+        if (currentReconnectCounterValueMs == 0) return initialReconnectDelayMs;
+        if (currentReconnectCounterValueMs == 1) return initialReconnectDelayMs * 2;
+        return initialReconnectDelayMs * 5;
+    }();
+    reconnectTimerId_ = g_timeout_add(currentReconnectDelayMs, ReconnectTimerCallback, this);
+    spdlog::info("Scheduled PulseAudio reconnect in {} ms", currentReconnectDelayMs);
 }
 
 void PulseDeviceCollection::CancelReconnectTimer()

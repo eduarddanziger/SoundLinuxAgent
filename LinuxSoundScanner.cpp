@@ -189,7 +189,6 @@ protected:
                     rmqPassword));
             }
             
-//            AgentObserver subscriber(collection);
             ServiceObserver subscriber(collection, *requestDispatcherSmartPtr);
 
             collection.Subscribe(subscriber);
