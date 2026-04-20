@@ -14,33 +14,45 @@
 PulseDeviceCollection::PulseDeviceCollection()
     : mainLoop_(nullptr)
     , context_(nullptr)
+    , gMainLoop_(nullptr)
 {
     LOG_SCOPE();
     gMainLoop_ = g_main_loop_new(nullptr, FALSE);
     mainLoop_ = pa_glib_mainloop_new(g_main_loop_get_context(gMainLoop_));
-    context_ = pa_context_new(pa_glib_mainloop_get_api(mainLoop_), "DeviceMonitor");
+    if (!CreateContext()) {
+        throw std::runtime_error("Failed to create PulseAudio context");
+    }
 }
 
 PulseDeviceCollection::~PulseDeviceCollection() {
     LOG_SCOPE();
-    if(context_) {
-        pa_context_unref(context_);
-    }
+    CancelReconnectTimer();
+    DestroyContext();
     if(mainLoop_) pa_glib_mainloop_free(mainLoop_);
     if(gMainLoop_) g_main_loop_unref(gMainLoop_);
 }
 
 void PulseDeviceCollection::ActivateAndStartLoop() {
     LOG_SCOPE();
+    isLoopActive_ = true;
+    if (!context_ && !CreateContext()) {
+        throw std::runtime_error("Failed to create PulseAudio context");
+    }
     pa_context_set_state_callback(context_, ContextStateCallback, this);
-    pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
+    if (pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr) < 0) {
+        spdlog::error("Initial PulseAudio connect failed: {}", pa_strerror(pa_context_errno(context_)));
+        DestroyContext();
+        ScheduleReconnect();
+    }
 	g_main_loop_run(gMainLoop_);
 }
 
 void PulseDeviceCollection::DeactivateAndStopLoop() {
     LOG_SCOPE();
+    isLoopActive_ = false;
+    CancelReconnectTimer();
     StopMonitoring();
-    pa_context_disconnect(context_);
+    DestroyContext();
     g_main_loop_quit(gMainLoop_);
 }
 
@@ -86,6 +98,37 @@ std::unique_ptr<SoundDeviceInterface> PulseDeviceCollection::CreateItem(const st
     return std::make_unique<PulseDevice>(pnpToDeviceMap_.at(devicePnpId));
 }
 
+bool PulseDeviceCollection::CreateContext()
+{
+    context_ = pa_context_new(pa_glib_mainloop_get_api(mainLoop_), "DeviceMonitor");
+    if (!context_) {
+        spdlog::error("Failed to create PulseAudio context");
+        return false;
+    }
+
+    return true;
+}
+
+void PulseDeviceCollection::DestroyContext()
+{
+    if (!context_) {
+        return;
+    }
+
+    pa_context_set_state_callback(context_, nullptr, nullptr);
+    pa_context_set_subscribe_callback(context_, nullptr, nullptr);
+
+    const auto state = pa_context_get_state(context_);
+    if (state != PA_CONTEXT_UNCONNECTED &&
+        state != PA_CONTEXT_FAILED &&
+        state != PA_CONTEXT_TERMINATED) {
+        pa_context_disconnect(context_);
+    }
+
+    pa_context_unref(context_);
+    context_ = nullptr;
+}
+
 void PulseDeviceCollection::StartMonitoring() {
     LOG_SCOPE();
 
@@ -110,7 +153,8 @@ void PulseDeviceCollection::StartMonitoring() {
     }
 }
 
-void PulseDeviceCollection::StopMonitoring() {
+void PulseDeviceCollection::StopMonitoring() const
+{
     LOG_SCOPE();
     
     // Disable subscription callback
@@ -129,6 +173,62 @@ void PulseDeviceCollection::StopMonitoring() {
     } else {
         spdlog::warn("Context not ready, can't stop monitoring");
     }
+}
+
+void PulseDeviceCollection::ScheduleReconnect()
+{
+    if (!isLoopActive_ || reconnectTimerId_ != 0) {
+        return;
+    }
+
+    constexpr guint reconnectDelayMs = 1000;
+    static int64_t reconnectionCounter = 0;
+    auto recCount = reconnectionCounter++;
+
+    const auto ReconnectDelayMs = [recCount]()
+    {
+        if (recCount == 0) return reconnectDelayMs;
+        if (recCount == 1) return reconnectDelayMs * 2;
+        return reconnectDelayMs * 5;
+    };
+    reconnectTimerId_ = g_timeout_add(ReconnectDelayMs(), ReconnectTimerCallback, this);
+    spdlog::info("Scheduled PulseAudio reconnect in {} ms", reconnectDelayMs);
+}
+
+void PulseDeviceCollection::CancelReconnectTimer()
+{
+    if (reconnectTimerId_ != 0) {
+        g_source_remove(reconnectTimerId_);
+        reconnectTimerId_ = 0;
+    }
+}
+
+// ReSharper disable once CppDFAConstantFunctionResult
+gboolean PulseDeviceCollection::ReconnectTimerCallback(gpointer userdata)
+{
+    auto* self = static_cast<PulseDeviceCollection*>(userdata);
+    self->reconnectTimerId_ = 0;
+
+    if (!self->isLoopActive_) {
+        return G_SOURCE_REMOVE;
+    }
+
+    spdlog::info("Attempting PulseAudio reconnect...");
+    self->DestroyContext();
+    if (!self->CreateContext()) {
+        self->ScheduleReconnect();
+        return G_SOURCE_REMOVE;
+    }
+
+    pa_context_set_state_callback(self->context_, ContextStateCallback, self);
+
+    if (pa_context_connect(self->context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr) < 0) {
+        spdlog::error("PulseAudio reconnect failed: {}", pa_strerror(pa_context_errno(self->context_)));
+        self->DestroyContext();
+        self->ScheduleReconnect();
+    }
+
+    return G_SOURCE_REMOVE;
 }
 
 void PulseDeviceCollection::RequestInitialInfo() {
@@ -211,6 +311,7 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
 
 
 
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
@@ -228,10 +329,12 @@ void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) 
             spdlog::error(
                 "PulseAudio context got FAILED status (state {}): {}", stateAsInt, pa_strerror(pa_context_errno(c))
             );
+            self->ScheduleReconnect();
             break;
             
         case PA_CONTEXT_TERMINATED:
             spdlog::info("PulseAudio context got TERMINATED status, state: {}", stateAsInt);
+            self->ScheduleReconnect();
             break;
             
         default:

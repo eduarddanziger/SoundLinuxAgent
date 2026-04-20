@@ -32,9 +32,14 @@ public:
     void Unsubscribe(SoundDeviceObserverInterface& observer) override;
 
 private:
+    bool CreateContext();
+    void DestroyContext();
     void RequestInitialInfo();
     void StartMonitoring();
-    void StopMonitoring();
+    void StopMonitoring() const;
+    void ScheduleReconnect();
+    void CancelReconnectTimer();
+    static gboolean ReconnectTimerCallback(gpointer userdata);
 
     void AddOrUpdateAndNotify(SoundDeviceEventType event, const std::string& pnpId, const std::string& name, uint32_t volume, SoundDeviceFlowType type);
     void CheckIfVolumeChangedAndNotify(const std::string& pnpId, uint16_t volume, SoundDeviceFlowType type);
@@ -101,6 +106,8 @@ private:
     pa_glib_mainloop* mainLoop_;
     pa_context* context_;
     GMainLoop* gMainLoop_;
+    bool isLoopActive_ = false;
+    guint reconnectTimerId_ = 0;
     std::unordered_map<std::string, PulseDevice> pnpToDeviceMap_;
     std::set<SoundDeviceObserverInterface*> observers_;
 };
