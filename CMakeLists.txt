@@ -16,7 +16,15 @@ endif()
 
 # Debug: Show environment variables
 message(STATUS "HOME=$ENV{HOME}")
-message(STATUS "VCPKG_ROOT=$ENV{VCPKG_ROOT}")
+
+message(STATUS "VCPKG_ROOT=$ENV{VCPKG_ROOT} (initial)")
+if(NOT DEFINED ENV{VCPKG_ROOT} OR "$ENV{VCPKG_ROOT}" STREQUAL "")
+  set(ENV{VCPKG_ROOT} "$ENV{HOME}/vcpkg")
+  message(STATUS "VCPKG_ROOT=$ENV{VCPKG_ROOT} (changed)")
+endif()
+set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+  CACHE STRING "Vcpkg toolchain file")
+
 
 project("LinuxSoundScanner")
 
@@ -76,6 +84,28 @@ target_link_libraries(LinuxSoundScanner PRIVATE
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
     rmqcpp::rmq
+)
+
+# rmqcpp::rmq's INTERFACE_LINK_LIBRARIES contains bare -lbdl and -lbal
+# (without a -L search path). Add the vcpkg lib dirs so those resolve:
+if(VCPKG_INSTALLED_DIR AND VCPKG_TARGET_TRIPLET)
+  target_link_directories(LinuxSoundScanner PRIVATE
+          "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib"
+          "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/$<$<CONFIG:Debug>:debug/>lib"
+  )
+endif()
+
+# Resolve cyclic static-link references between bdl/bal and pcre2.
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(_vcpkg_lib_dir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/lib")
+else()
+  set(_vcpkg_lib_dir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
+endif()
+
+# Wrap the cyclic static archives in an RESCAN group. LINK_GROUP emits them
+# as libraries (after objects, in library position) rather than as link options.
+target_link_libraries(LinuxSoundScanner PRIVATE
+        "$<LINK_GROUP:RESCAN,${_vcpkg_lib_dir}/libbdl.a,${_vcpkg_lib_dir}/libbal.a,${_vcpkg_lib_dir}/libpcre2-8.a>"
 )
 
 install(TARGETS LinuxSoundScanner
