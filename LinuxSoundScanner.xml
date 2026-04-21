@@ -6,5 +6,7 @@
         <rmqHostName>${system.env.RMQ_HOST:-localhost}</rmqHostName>
         <rmqUserName>${system.env.RMQ_USER:-guest}</rmqUserName>
         <rmqPassword>${system.env.RMQ_PASSWORD:-guest}</rmqPassword>
+        <pulseAudioReconnection>${system.env.PADIO_RECONNECT_ON:-false}</pulseAudioReconnection>
+        <pulseAudioInitialReconnectDelayMs>${system.env.PADIO_RECONNECTION_DELAY_MS:-1000}</pulseAudioInitialReconnectDelayMs>
     </custom>
 </config>

@@ -11,10 +11,12 @@
 #include <iostream>
 #include <csignal>
 #include <atomic>
+#include <memory>
 
 #include "cpversion.h"
 #include "ServiceObserver.h"
 #include "RabbitMqHttpRequestDispatcher.h"
+#include "SoundLibRuntimeSettings.h"
 
 
 using Poco::Util::Application;
@@ -47,6 +49,17 @@ protected:
         Application::initialize(self);
 
         SetUpLog();
+
+        SoundLibRuntimeSettings::SetPulseAudioReconnectionEnabled(
+            config().hasProperty(API_PULSE_AUDIO_RECONNECTION_CONFIGURATED_PROPERTY_KEY)
+                ? config().getBool(API_PULSE_AUDIO_RECONNECTION_CONFIGURATED_PROPERTY_KEY)
+                : DEFAULT_PULSE_AUDIO_RECONNECTION_ENABLED
+        );
+        SoundLibRuntimeSettings::SetPulseAudioInitialReconnectDelayMs(
+            config().hasProperty(API_INITIAL_RECONNECT_DELAY_MS_CONFIGURATED_PROPERTY_KEY)
+                ? config().getUInt(API_INITIAL_RECONNECT_DELAY_MS_CONFIGURATED_PROPERTY_KEY)
+                : DEFAULT_INITIAL_RECONNECT_DELAY_MS
+        );
 
         if (transportMethod_.empty())
         {   // If no transport method is provided via command line, read it from the configuration
@@ -176,20 +189,19 @@ protected:
                                      API_TRANSPORT_METHOD_VALUE00_NONE);
                     }
                 };
-                requestDispatcherSmartPtr.reset(new EmptyDispatcher());
+                requestDispatcherSmartPtr = std::make_unique<EmptyDispatcher>();
             }
             else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
             {
                 const auto rmqHostName = ReadOptionalSimpleConfigProperty(API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY);
                 const auto rmqUserName = ReadOptionalSimpleConfigProperty(API_RMQ_USER_CONFIGURATED_PROPERTY_KEY);
                 const auto rmqPassword = ReadOptionalSimpleConfigProperty(API_RMQ_PASSWORD_CONFIGURATED_PROPERTY_KEY);
-                requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher(
+                requestDispatcherSmartPtr = std::make_unique<RabbitMqHttpRequestDispatcher>(
                     rmqHostName,
                     rmqUserName,
-                    rmqPassword));
+                    rmqPassword);
             }
             
-//            AgentObserver subscriber(collection);
             ServiceObserver subscriber(collection, *requestDispatcherSmartPtr);
 
             collection.Subscribe(subscriber);
@@ -247,10 +259,6 @@ private:
     
     std::string transportMethod_;
 
-    std::string apiBaseUrl_;
-    std::string universalToken_;
-    std::string codespaceName_;
-
     static constexpr auto API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
     static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
     static constexpr auto API_TRANSPORT_METHOD_VALUE02_RABBITMQ = "RabbitMQ";
@@ -258,6 +266,10 @@ private:
     static constexpr auto API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY = "custom.rmqHostName";
     static constexpr auto API_RMQ_USER_CONFIGURATED_PROPERTY_KEY = "custom.rmqUserName";
     static constexpr auto API_RMQ_PASSWORD_CONFIGURATED_PROPERTY_KEY = "custom.rmqPassword";
+    static constexpr auto API_PULSE_AUDIO_RECONNECTION_CONFIGURATED_PROPERTY_KEY = "custom.pulseAudioReconnection";
+    static constexpr auto API_INITIAL_RECONNECT_DELAY_MS_CONFIGURATED_PROPERTY_KEY = "custom.pulseAudioInitialReconnectDelayMs";
+    static constexpr bool DEFAULT_PULSE_AUDIO_RECONNECTION_ENABLED = false;
+    static constexpr unsigned int DEFAULT_INITIAL_RECONNECT_DELAY_MS = 1000;
 };
 
 std::function<void()> LinuxSoundScanner::deactivateCallback_{nullptr};

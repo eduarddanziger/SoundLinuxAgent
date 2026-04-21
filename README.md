@@ -82,7 +82,7 @@ on WSL.
 
 ## Run Configuration
 
-### Environment Variables and RabbitMQ
+### Environment Variables
 
 - `TRANSPORT_METHOD` selects the transport mode. Supported values are `RabbitMQ` and `None`, the default is `RabbitMQ`
 <br><br>Set `TRANSPORT_METHOD` to `None`, if you want the scanner not top send requests to RabbitMQ but only log them:
@@ -97,8 +97,13 @@ on WSL.
 
 - `RMQ_PASSWORD` sets the RabbitMQ password used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
 
+- `PADIO_RECONNECT_ON` enables PulseAudio reconnection scheduling on `PA_CONTEXT_FAILED` and `PA_CONTEXT_TERMINATED`, the default is `false`.
+
+- `PADIO_RECONNECTION_DELAY_MS` sets the initial PulseAudio reconnection delay in milliseconds, the default is `1000`.
+
 ## Changelog
 
+- 2026-04-21 Added optional PulseAudio reconnection; otherwise the process exits on PulseAudio failure or termination.
 - 2026-04-17 The necessary APIClient submodule's sources integrated, the submodule removed
 - 2026-03-29 CLI executable and DEB file removed. **LinuxSoundScanner** is distributed via Docker Compose.
 - 2026-03-22 Sent confirm events.

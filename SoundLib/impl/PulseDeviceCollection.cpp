@@ -1,5 +1,6 @@
 #include "PulseDeviceCollection.h"
 
+#include "../SoundLibRuntimeSettings.h"
 #include "../ScopeLogger.h"
 #include "../internal/StringUtils.h"
 
@@ -35,9 +36,6 @@ PulseDeviceCollection::~PulseDeviceCollection() {
 void PulseDeviceCollection::ActivateAndStartLoop() {
     LOG_SCOPE();
     isLoopActive_ = true;
-    if (!context_ && !CreateContext()) {
-        throw std::runtime_error("Failed to create PulseAudio context");
-    }
     pa_context_set_state_callback(context_, ContextStateCallback, this);
     if (pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr) < 0) {
         spdlog::error("Initial PulseAudio connect failed: {}", pa_strerror(pa_context_errno(context_)));
@@ -181,18 +179,19 @@ void PulseDeviceCollection::ScheduleReconnect()
         return;
     }
 
-    constexpr guint reconnectDelayMs = 1000;
+    const auto pulseAudioInitialReconnectDelayMs =
+        static_cast<guint>(SoundLibRuntimeSettings::GetPulseAudioInitialReconnectDelayMs());
     static int64_t reconnectionCounter = 0;
-    auto recCount = reconnectionCounter++;
+    const auto currentReconnectCounterValueMs = reconnectionCounter++;
 
-    const auto ReconnectDelayMs = [recCount]()
+    const auto currentReconnectDelayMs = [currentReconnectCounterValueMs, pulseAudioInitialReconnectDelayMs]()
     {
-        if (recCount == 0) return reconnectDelayMs;
-        if (recCount == 1) return reconnectDelayMs * 2;
-        return reconnectDelayMs * 5;
-    };
-    reconnectTimerId_ = g_timeout_add(ReconnectDelayMs(), ReconnectTimerCallback, this);
-    spdlog::info("Scheduled PulseAudio reconnect in {} ms", reconnectDelayMs);
+        if (currentReconnectCounterValueMs == 0) return pulseAudioInitialReconnectDelayMs;
+        if (currentReconnectCounterValueMs == 1) return pulseAudioInitialReconnectDelayMs * 2;
+        return pulseAudioInitialReconnectDelayMs * 5;
+    }();
+    reconnectTimerId_ = g_timeout_add(currentReconnectDelayMs, ReconnectTimerCallback, this);
+    spdlog::info("Scheduled PulseAudio reconnect in {} ms", currentReconnectDelayMs);
 }
 
 void PulseDeviceCollection::CancelReconnectTimer()
@@ -309,37 +308,42 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
 }
 
 
-
-
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
-    pa_context_state_t state = pa_context_get_state(c);
-    const int stateAsInt = static_cast<int>(state);
+    const int state = pa_context_get_state(c);
 
     switch (state) {
         case PA_CONTEXT_READY:
-            spdlog::info("PulseAudio context got READY status, state: {}", stateAsInt);
+            spdlog::info("PulseAudio context got READY status, state: {}", state);
             self->RequestInitialInfo();
             self->StartMonitoring();
             break;
                 
         case PA_CONTEXT_FAILED:
             spdlog::error(
-                "PulseAudio context got FAILED status (state {}): {}", stateAsInt, pa_strerror(pa_context_errno(c))
+                "PulseAudio context got FAILED status (state {}): {}", state, pa_strerror(pa_context_errno(c))
             );
-            self->ScheduleReconnect();
-            break;
+            if (SoundLibRuntimeSettings::GetPulseAudioReconnectionEnabled()) {
+                spdlog::info("PulseAudio reconnection enabled, attempting to reconnect...");
+                self->ScheduleReconnect();
+                break;
+            }
+            throw std::runtime_error("PulseAudio connection failed") ;
             
         case PA_CONTEXT_TERMINATED:
-            spdlog::info("PulseAudio context got TERMINATED status, state: {}", stateAsInt);
-            self->ScheduleReconnect();
-            break;
+            spdlog::info("PulseAudio context got TERMINATED status, state: {}", state);
+            if (SoundLibRuntimeSettings::GetPulseAudioReconnectionEnabled()) {
+                spdlog::info("PulseAudio reconnection enabled, attempting to reconnect...");
+                self->ScheduleReconnect();
+                break;
+            }
+            throw std::runtime_error("PulseAudio connection terminated") ;
             
         default:
             // Still connecting or other states
-            spdlog::info("PulseAudio context's state: {}", stateAsInt);
+            spdlog::info("PulseAudio context's state: {}", state);
             break;
     }
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <memory>
 #include <functional>
 #include <unordered_map>
@@ -34,9 +33,12 @@ public:
 private:
     bool CreateContext();
     void DestroyContext();
+
     void RequestInitialInfo();
+
     void StartMonitoring();
     void StopMonitoring() const;
+
     void ScheduleReconnect();
     void CancelReconnectTimer();
     static gboolean ReconnectTimerCallback(gpointer userdata);
@@ -57,7 +59,6 @@ private:
 
     template<typename INFO_T_>
     static void ChangedInfoCallback(pa_context* context, const INFO_T_* info, int eol, void* userdata);
-    
 
     template<typename INFO_T_>
     void DeliverDeviceAndState(SoundDeviceEventType event, const INFO_T_& info);

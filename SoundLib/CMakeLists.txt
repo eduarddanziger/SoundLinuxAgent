@@ -4,6 +4,7 @@ pkg_check_modules(LIBPULSE_MAINLOOP_GLIB REQUIRED libpulse-mainloop-glib)
 
 add_library(SoundLib
     impl/SoundAgent.cpp
+    impl/SoundLibRuntimeSettings.cpp
     impl/PulseDeviceCollection.cpp
     impl/PulseDevice.cpp
 )
