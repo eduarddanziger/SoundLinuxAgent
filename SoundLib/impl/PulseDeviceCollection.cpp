@@ -35,9 +35,6 @@ PulseDeviceCollection::~PulseDeviceCollection() {
 void PulseDeviceCollection::ActivateAndStartLoop() {
     LOG_SCOPE();
     isLoopActive_ = true;
-    if (!context_ && !CreateContext()) {
-        throw std::runtime_error("Failed to create PulseAudio context");
-    }
     pa_context_set_state_callback(context_, ContextStateCallback, this);
     if (pa_context_connect(context_, nullptr, PA_CONTEXT_NOFLAGS, nullptr) < 0) {
         spdlog::error("Initial PulseAudio connect failed: {}", pa_strerror(pa_context_errno(context_)));
@@ -309,37 +306,34 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
 }
 
 
-
-
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
-    pa_context_state_t state = pa_context_get_state(c);
-    const int stateAsInt = static_cast<int>(state);
+    const int state = pa_context_get_state(c);
 
     switch (state) {
         case PA_CONTEXT_READY:
-            spdlog::info("PulseAudio context got READY status, state: {}", stateAsInt);
+            spdlog::info("PulseAudio context got READY status, state: {}", state);
             self->RequestInitialInfo();
             self->StartMonitoring();
             break;
                 
         case PA_CONTEXT_FAILED:
             spdlog::error(
-                "PulseAudio context got FAILED status (state {}): {}", stateAsInt, pa_strerror(pa_context_errno(c))
+                "PulseAudio context got FAILED status (state {}): {}", state, pa_strerror(pa_context_errno(c))
             );
             self->ScheduleReconnect();
             break;
             
         case PA_CONTEXT_TERMINATED:
-            spdlog::info("PulseAudio context got TERMINATED status, state: {}", stateAsInt);
+            spdlog::info("PulseAudio context got TERMINATED status, state: {}", state);
             self->ScheduleReconnect();
             break;
             
         default:
             // Still connecting or other states
-            spdlog::info("PulseAudio context's state: {}", stateAsInt);
+            spdlog::info("PulseAudio context's state: {}", state);
             break;
     }
 }

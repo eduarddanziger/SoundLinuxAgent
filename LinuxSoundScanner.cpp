@@ -11,6 +11,7 @@
 #include <iostream>
 #include <csignal>
 #include <atomic>
+#include <memory>
 
 #include "cpversion.h"
 #include "ServiceObserver.h"
@@ -176,17 +177,17 @@ protected:
                                      API_TRANSPORT_METHOD_VALUE00_NONE);
                     }
                 };
-                requestDispatcherSmartPtr.reset(new EmptyDispatcher());
+                requestDispatcherSmartPtr = std::make_unique<EmptyDispatcher>();
             }
             else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
             {
                 const auto rmqHostName = ReadOptionalSimpleConfigProperty(API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY);
                 const auto rmqUserName = ReadOptionalSimpleConfigProperty(API_RMQ_USER_CONFIGURATED_PROPERTY_KEY);
                 const auto rmqPassword = ReadOptionalSimpleConfigProperty(API_RMQ_PASSWORD_CONFIGURATED_PROPERTY_KEY);
-                requestDispatcherSmartPtr.reset(new RabbitMqHttpRequestDispatcher(
+                requestDispatcherSmartPtr = std::make_unique<RabbitMqHttpRequestDispatcher>(
                     rmqHostName,
                     rmqUserName,
-                    rmqPassword));
+                    rmqPassword);
             }
             
             ServiceObserver subscriber(collection, *requestDispatcherSmartPtr);
@@ -245,10 +246,6 @@ private:
     bool onlyConsoleOutputRequested_ = false;
     
     std::string transportMethod_;
-
-    std::string apiBaseUrl_;
-    std::string universalToken_;
-    std::string codespaceName_;
 
     static constexpr auto API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
     static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
