@@ -328,16 +328,18 @@ void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) 
             if (SoundLibRuntimeSettings::GetPulseAudioReconnectionEnabled()) {
                 spdlog::info("PulseAudio reconnection enabled, attempting to reconnect...");
                 self->ScheduleReconnect();
+                break;
             }
-            break;
+            throw std::runtime_error("PulseAudio connection failed") ;
             
         case PA_CONTEXT_TERMINATED:
             spdlog::info("PulseAudio context got TERMINATED status, state: {}", state);
             if (SoundLibRuntimeSettings::GetPulseAudioReconnectionEnabled()) {
                 spdlog::info("PulseAudio reconnection enabled, attempting to reconnect...");
                 self->ScheduleReconnect();
+                break;
             }
-            break;
+            throw std::runtime_error("PulseAudio connection terminated") ;
             
         default:
             // Still connecting or other states
