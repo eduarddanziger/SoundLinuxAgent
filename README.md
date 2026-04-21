@@ -82,7 +82,7 @@ on WSL.
 
 ## Run Configuration
 
-### Environment Variables and RabbitMQ
+### Environment Variables
 
 - `TRANSPORT_METHOD` selects the transport mode. Supported values are `RabbitMQ` and `None`, the default is `RabbitMQ`
 <br><br>Set `TRANSPORT_METHOD` to `None`, if you want the scanner not top send requests to RabbitMQ but only log them:
@@ -96,6 +96,10 @@ on WSL.
 - `RMQ_USER` sets the RabbitMQ user name used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
 
 - `RMQ_PASSWORD` sets the RabbitMQ password used by the scanner when `TRANSPORT_METHOD=RabbitMQ`, the default is `guest`.
+
+- `PADIO_RECONNECT_ON` enables PulseAudio reconnection scheduling on `PA_CONTEXT_FAILED` and `PA_CONTEXT_TERMINATED`, the default is `false`.
+
+- `PADIO_RECONNECTION_DELAY_MS` sets the initial PulseAudio reconnection delay in milliseconds, the default is `1000`.
 
 ## Changelog
 
