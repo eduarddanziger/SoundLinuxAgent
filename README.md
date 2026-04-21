@@ -103,6 +103,7 @@ on WSL.
 
 ## Changelog
 
+- 2026-04-21 Added optional PulseAudio reconnection; otherwise the process exits on PulseAudio failure or termination.
 - 2026-04-17 The necessary APIClient submodule's sources integrated, the submodule removed
 - 2026-03-29 CLI executable and DEB file removed. **LinuxSoundScanner** is distributed via Docker Compose.
 - 2026-03-22 Sent confirm events.
