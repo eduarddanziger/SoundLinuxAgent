@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "AudioDeviceApiClient.h"
-#include "internal/StringUtils.h"
 
 #include <spdlog/spdlog.h>
 #include "magic_enum/magic_enum.hpp"

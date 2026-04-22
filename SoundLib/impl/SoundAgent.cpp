@@ -1,7 +1,5 @@
 ﻿#include "../../public/SoundAgentInterface.h"
 
-#include <stdexcept>
-
 #include "PulseDeviceCollection.h"
 
 

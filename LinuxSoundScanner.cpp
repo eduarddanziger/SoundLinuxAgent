@@ -5,7 +5,6 @@
 #include <Poco/Util/OptionSet.h>
 #include <Poco/Util/HelpFormatter.h>
 #include <Poco/Task.h>
-#include <Poco/UnicodeConverter.h>
 #include <Poco/String.h>
 
 #include <iostream>
