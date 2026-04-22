@@ -84,7 +84,7 @@ std::string ServiceObserver::GetHostName()
             std::string hostName(hostNameBuffer);
             std::ranges::transform(hostName, hostName.begin(),
                 [](char c) { return std::toupper(c); });
-            spdlog::info("Rememberred host name: {}.", hostName);
+            spdlog::info("Remembered host name: {}.", hostName);
             return hostName;
         }();
     return HOST_NAME;
@@ -147,7 +147,7 @@ std::string ServiceObserver::GetOperationSystemName()
                     osName = std::format("Linux, kernel {}", uts.release);
                 }
             }
-            spdlog::info("Rememberred OS name: {}.", osName);
+            spdlog::info("Remembered OS name: {}.", osName);
             return osName;
         }();
     return OS_NAME;

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "ClassDefHelper.h"
+
+#include <cstdint>
 
 class SoundLibRuntimeSettings final
 {
