@@ -3,12 +3,6 @@
 #include <filesystem>
 #include <sstream>
 
-#ifndef __linux__
-#include <Windows.h>
-#include <ShlObj.h>
-#endif
-
-
 namespace ed::utility
 {
     class AppPath
@@ -55,18 +49,6 @@ inline bool ed::utility::AppPath::GetAndValidateLogFilePathName(std::filesystem:
 inline void ed::utility::AppPath::GetLogDir(std::filesystem::path& ownDataPath,
     [[maybe_unused]] const std::string& appFileNameWoExt)
 {
-#ifndef __linux__
-    LPWSTR pProgramDataPath;
-    std::wstring wideProgramDataPath;
-
-    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramData, 0, NULL, &pProgramDataPath)))
-    {
-        wideProgramDataPath = pProgramDataPath;
-        CoTaskMemFree(pProgramDataPath);
-    }
-    ownDataPath = std::filesystem::path(wideProgramDataPath) / appFileNameWoExt;
-#else
     ownDataPath = std::filesystem::path(std::getenv("HOME")) / "logs";
-#endif
 }
 

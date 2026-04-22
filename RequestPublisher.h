@@ -4,9 +4,7 @@
 #include <rmqa_vhost.h>
 #include <nlohmann/json_fwd.hpp>
 
-#include <atomic>
 #include <condition_variable>
-#include <mutex>
 
 class RequestPublisher
 {

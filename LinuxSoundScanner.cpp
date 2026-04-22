@@ -5,7 +5,6 @@
 #include <Poco/Util/OptionSet.h>
 #include <Poco/Util/HelpFormatter.h>
 #include <Poco/Task.h>
-#include <Poco/UnicodeConverter.h>
 #include <Poco/String.h>
 
 #include <iostream>
@@ -51,28 +50,28 @@ protected:
         SetUpLog();
 
         SoundLibRuntimeSettings::SetPulseAudioReconnectionEnabled(
-            config().hasProperty(API_PULSE_AUDIO_RECONNECTION_CONFIGURATED_PROPERTY_KEY)
-                ? config().getBool(API_PULSE_AUDIO_RECONNECTION_CONFIGURATED_PROPERTY_KEY)
+            config().hasProperty(API_PULSE_AUDIO_RECONNECTION_PROPERTY_KEY)
+                ? config().getBool(API_PULSE_AUDIO_RECONNECTION_PROPERTY_KEY)
                 : DEFAULT_PULSE_AUDIO_RECONNECTION_ENABLED
         );
         SoundLibRuntimeSettings::SetPulseAudioInitialReconnectDelayMs(
-            config().hasProperty(API_INITIAL_RECONNECT_DELAY_MS_CONFIGURATED_PROPERTY_KEY)
-                ? config().getUInt(API_INITIAL_RECONNECT_DELAY_MS_CONFIGURATED_PROPERTY_KEY)
+            config().hasProperty(API_INITIAL_RECONNECT_DELAY_MS_PROPERTY_KEY)
+                ? config().getUInt(API_INITIAL_RECONNECT_DELAY_MS_PROPERTY_KEY)
                 : DEFAULT_INITIAL_RECONNECT_DELAY_MS
         );
 
         if (transportMethod_.empty())
         {   // If no transport method is provided via command line, read it from the configuration
             spdlog::info("Transport method not provided via command line. Reading from configuration...");
-            transportMethod_ = ReadOptionalSimpleConfigProperty(API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY, API_TRANSPORT_METHOD_VALUE00_NONE);
+            transportMethod_ = ReadOptionalSimpleConfigProperty(API_TRANSPORT_METHOD_PROPERTY_KEY, API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE);
         }
 
-        if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE) != 0
-            && Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) != 0
+        if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE) != 0
+            && Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_PROPERTY_VALUE02_RABBITMQ) != 0
         )
         {
-            spdlog::info(R"(Invalid transport method "{}". Set it to "{}".)", transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE);
-            transportMethod_ = API_TRANSPORT_METHOD_VALUE00_NONE;
+            spdlog::info(R"(Invalid transport method "{}". Set it to "{}".)", transportMethod_, API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE);
+            transportMethod_ = API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE;
         }
         else
         {
@@ -175,7 +174,7 @@ protected:
 
             std::unique_ptr<HttpRequestDispatcherInterface> requestDispatcherSmartPtr;
 
-            if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE00_NONE) == 0)
+            if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE) == 0)
             {
                 class EmptyDispatcher : public HttpRequestDispatcherInterface
                 {
@@ -186,16 +185,16 @@ protected:
                     ) override
                     {
                         spdlog::info("Enqueueing ignored, because the transport method is \"{}\"",
-                                     API_TRANSPORT_METHOD_VALUE00_NONE);
+                                     API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE);
                     }
                 };
                 requestDispatcherSmartPtr = std::make_unique<EmptyDispatcher>();
             }
-            else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_VALUE02_RABBITMQ) == 0)
+            else if (Poco::icompare(transportMethod_, API_TRANSPORT_METHOD_PROPERTY_VALUE02_RABBITMQ) == 0)
             {
-                const auto rmqHostName = ReadOptionalSimpleConfigProperty(API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY);
-                const auto rmqUserName = ReadOptionalSimpleConfigProperty(API_RMQ_USER_CONFIGURATED_PROPERTY_KEY);
-                const auto rmqPassword = ReadOptionalSimpleConfigProperty(API_RMQ_PASSWORD_CONFIGURATED_PROPERTY_KEY);
+                const auto rmqHostName = ReadOptionalSimpleConfigProperty(API_RMQ_HOST_PROPERTY_KEY);
+                const auto rmqUserName = ReadOptionalSimpleConfigProperty(API_RMQ_USER_PROPERTY_KEY);
+                const auto rmqPassword = ReadOptionalSimpleConfigProperty(API_RMQ_PASSWORD_PROPERTY_KEY);
                 requestDispatcherSmartPtr = std::make_unique<RabbitMqHttpRequestDispatcher>(
                     rmqHostName,
                     rmqUserName,
@@ -259,15 +258,15 @@ private:
     
     std::string transportMethod_;
 
-    static constexpr auto API_TRANSPORT_METHOD_CONFIGURATED_PROPERTY_KEY = "custom.transportMethod";
-    static constexpr auto API_TRANSPORT_METHOD_VALUE00_NONE = "None";
-    static constexpr auto API_TRANSPORT_METHOD_VALUE02_RABBITMQ = "RabbitMQ";
+    static constexpr auto API_TRANSPORT_METHOD_PROPERTY_KEY = "custom.transportMethod";
+    static constexpr auto API_TRANSPORT_METHOD_PROPERTY_VALUE00_NONE = "None";
+    static constexpr auto API_TRANSPORT_METHOD_PROPERTY_VALUE02_RABBITMQ = "RabbitMQ";
 
-    static constexpr auto API_RMQ_HOST_CONFIGURATED_PROPERTY_KEY = "custom.rmqHostName";
-    static constexpr auto API_RMQ_USER_CONFIGURATED_PROPERTY_KEY = "custom.rmqUserName";
-    static constexpr auto API_RMQ_PASSWORD_CONFIGURATED_PROPERTY_KEY = "custom.rmqPassword";
-    static constexpr auto API_PULSE_AUDIO_RECONNECTION_CONFIGURATED_PROPERTY_KEY = "custom.pulseAudioReconnection";
-    static constexpr auto API_INITIAL_RECONNECT_DELAY_MS_CONFIGURATED_PROPERTY_KEY = "custom.pulseAudioInitialReconnectDelayMs";
+    static constexpr auto API_RMQ_HOST_PROPERTY_KEY = "custom.rmqHostName";
+    static constexpr auto API_RMQ_USER_PROPERTY_KEY = "custom.rmqUserName";
+    static constexpr auto API_RMQ_PASSWORD_PROPERTY_KEY = "custom.rmqPassword";
+    static constexpr auto API_PULSE_AUDIO_RECONNECTION_PROPERTY_KEY = "custom.pulseAudioReconnection";
+    static constexpr auto API_INITIAL_RECONNECT_DELAY_MS_PROPERTY_KEY = "custom.pulseAudioInitialReconnectDelayMs";
     static constexpr bool DEFAULT_PULSE_AUDIO_RECONNECTION_ENABLED = false;
     static constexpr unsigned int DEFAULT_INITIAL_RECONNECT_DELAY_MS = 1000;
 };

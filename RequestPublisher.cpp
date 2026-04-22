@@ -156,6 +156,7 @@ RequestPublisher::RequestPublisher(const std::string& host, const std::string& v
     }
 }
 
+// ReSharper disable once CppMemberFunctionMayBeStatic
 void RequestPublisher::HandleConnectionError(const bsl::string& errorText, int errorCode)
 {
     spdlog::error("RabbitMQ error {}: {}",

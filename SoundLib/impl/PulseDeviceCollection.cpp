@@ -312,9 +312,7 @@ void PulseDeviceCollection::DeliverChangedState(const INFO_T_& info) {
 void PulseDeviceCollection::ContextStateCallback(pa_context* c, void* userdata) {
     auto* self = static_cast<PulseDeviceCollection*>(userdata);
 
-    const int state = pa_context_get_state(c);
-
-    switch (state) {
+    switch (const int state = pa_context_get_state(c)) {
         case PA_CONTEXT_READY:
             spdlog::info("PulseAudio context got READY status, state: {}", state);
             self->RequestInitialInfo();
@@ -365,22 +363,24 @@ void PulseDeviceCollection::SubscribeCallback(pa_context* c, pa_subscription_eve
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_REMOVE) {
             spdlog::info("SINK index {}: Removing...", idx);
+// ReSharper disable CommentTypo
 /*  
-            pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
-            pa_operation_unref(op);
-           if (self->pnpToDeviceMap_.count(idx) > 0) {
-                PulseDevice device = self->pnpToDeviceMap_[idx];
-                self->pnpToDeviceMap_.erase(idx);
+        pa_operation* op = pa_context_get_sink_info_by_index(c, idx, SinkInfoCallback, self);
+        pa_operation_unref(op);
+       if (self->pnpToDeviceMap_.count(idx) > 0) {
+            PulseDevice device = self->pnpToDeviceMap_[idx];
+            self->pnpToDeviceMap_.erase(idx);
 
-                // Notify about removal
-                DeviceEvent event{ device, DeviceEventType::Removed };
-                self->NotifySubscribers(event);
-            }
- */        
+            // Notify about removal
+            DeviceEvent event{ device, DeviceEventType::Removed };
+            self->NotifySubscribers(event);
+        }
+*/        
+// ReSharper restore CommentTypo
         }
         else if (operation == PA_SUBSCRIPTION_EVENT_CHANGE)
         {
-            spdlog::info("SINC index {}: Changed...", idx);
+            spdlog::info("SINK index {}: Changed...", idx);
             pa_operation* op = pa_context_get_sink_info_by_index(c, idx, ChangedInfoSinkCallback, self);
             pa_operation_unref(op);
         }
@@ -521,12 +521,14 @@ std::pair<uint16_t, std::string> PulseDeviceCollection::ExtractVolumeAndPnpId(co
         PulseDevice::NormalizeVolumeFromPulseAudioRangeToThousandBased(pa_cvolume_avg(&info.volume)) :
         0;
 
+    // ReSharper disable CommentTypo
     // UNCOMMENT if you want to print properties for debugging
     // char *props = pa_proplist_to_string_sep(info.proplist, "\n");
     // if (props) {
     //     std::cout << props << std::endl;
     //     pa_xfree(props);
     // }
+    // ReSharper restore CommentTypo
 
     std::string pnpId;
     if (const char* pnpIdPtr = pa_proplist_gets(info.proplist, "device.name");
